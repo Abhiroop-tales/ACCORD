@@ -5,8 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/detection.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/loader.css') }}">
 
-    
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 
     <title>Conflict Detection-Resolution | Dashboard</title>
 </head>
@@ -28,6 +29,8 @@
             {% endif %}
         </ul>
     </nav>
+
+
     <main>
         <!---- CONFLICT DETECTION ---------------------->
         <div id="tab-1" class="tab-content">
@@ -64,10 +67,40 @@
                 </div>
                 
                 <div class="filter-buttons">
-                  <button id="filter-btn">Filter</button>
+                  <button id="filter-btn" onclick="detectConflicts()">Detect Conflicts</button>
                   <button id="reset-btn">Reset</button>
                 </div>
               </div>
+
+              <div class="image-container">
+                <img src="{{ url_for('static', filename='img/conflictdetection.png') }}" alt="Conflict Detection Process">
+              </div>
+              
+              <div id="detect_loader" class="loader" style="display:none;">
+                <img src="{{ url_for('static', filename='img/loader.gif') }}" alt="Loading...">
+              </div>
+
+
+              <div id="logs-table-container" style="display: none;">
+                <table id="logs-table" class="conflicts-table">
+                  <thead>
+                    <tr>
+                      <th>Activity Time</th>
+                      <th>Action</th>
+                      <th>Document</th>
+                      <th>Actor</th>
+                      <th>Conflict</th>
+                      <th>Resolution</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                  </tbody>
+                </table>
+
+               
+              </div>  
+
+
 
         </div>
         

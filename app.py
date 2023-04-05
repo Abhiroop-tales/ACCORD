@@ -1,9 +1,12 @@
-from flask import Flask, render_template, request, redirect, url_for, session, flash
+from flask import Flask, render_template, request, redirect, url_for, session, flash, jsonify
 from flask_mysqldb import MySQL
-import yaml, hashlib, os
+import yaml, hashlib, os, time
 from functools import wraps
-from serviceAPI import create_user_driveAPI_service, create_directoryAPI_service
+from serviceAPI import create_user_driveAPI_service, create_directoryAPI_service, create_reportsAPI_service
 from detection import get_filteroptions
+from conflictDetctionAlgorithm import detectmain
+from sqlconnector import DatabaseQuery
+from activitylogs import Logupdater
 
 # Dictionary to store the user services
 user_services = {}
@@ -62,9 +65,14 @@ def login():
             # Create the drive API and directory API service after a successful login
             drive_service = create_user_driveAPI_service(session['username'])
             directory_service = create_directoryAPI_service()
+            reportsAPI_service = create_reportsAPI_service()
 
             # Store services in the global services dictionary
-            user_services[session['username']] = {'drive': drive_service, 'directory': directory_service}
+            user_services[session['username']] = {'drive': drive_service, 'directory': directory_service, 'reports': reportsAPI_service}
+
+            # Fetch and Update the logs database
+            activity_logs = Logupdater(mysql, reportsAPI_service)
+            activity_logs.updateLogs_database() 
 
 
             if session['user_role'] == 'admin':
@@ -98,6 +106,7 @@ def user_dashboard():
         drive_service = user_services[session['username']]['drive']
         directory_service = user_services[session['username']]['directory']
         options_actor, options_document = get_filteroptions(drive_service, directory_service)
+        session['user_documents'] = options_document
 
         return render_template('dashboard.html', user_role='user', username=session['username'], options_actor=options_actor, options_document=options_document)
     else:
@@ -115,6 +124,84 @@ def logout():
     session.clear()
     flash('You have been logged out.', 'success')
     return redirect(url_for('login'))
+
+
+
+########### Route to handle OnClick Detect Function ##############
+@app.route('/detect_conflicts', methods=['POST'])
+def detect_conflicts():
+    action = request.form.get('action')
+    actor = request.form.get('actor')
+    document = request.form.get('document')
+
+    if(action == "Any"):
+        action = "LIKE '%'"
+    else:
+        action = "LIKE '"+action+"%'"
+    if(actor == "Any"):
+        actor = "LIKE '%'"
+    else:
+        actor = "= '"+actor+"'"
+    if(document == "Any"):
+        document = "LIKE '%'"
+    else:
+        document = "= '"+document+"'" 
+
+    # Extract Logs from databse with the filter parameters and also extract all the action constraints
+    db = DatabaseQuery(mysql.connection, mysql.connection.cursor())
+    logs = db.extract_logs_detect(action,actor,document)
+    actionConstraintsList = db.extract_action_constraints("LIKE '%'")
+    del db
+
+    # Create a Dictionary of action constraitns with key as documentID
+    actionConstraints = {}
+    for constraint in actionConstraintsList:
+        if(constraint[1] not in actionConstraints):
+            actionConstraints[constraint[1]] = [constraint]
+        else:
+            actionConstraints[constraint[1]].append(constraint)
+    
+    if(logs != None and len(logs)>1):
+        
+        # Initializing and setting user view parameters
+        headers = logs.pop(0)
+        conflictLogs = []
+        logs = logs[::-1]
+
+        # Only use user Logs that are part of user documents
+        if(session['user_role'] != "admin" and document == "Any"):
+            userLogs = []
+            for log in logs:
+                docName = log[3]
+                if docName in session['user_documents']:
+                    userLogs.append(log)
+            
+            logs = userLogs
+
+
+        # Calculate time taken by the detection Engine to detect conflicts
+        T0 = time.time()
+        result = detectmain(logs,actionConstraints)
+        T1 = time.time()
+
+        # Update the display table only with Conflicts and print the detection Time
+        totalLogs = len(result)
+        conflictsCount = 0
+
+        for i in range(totalLogs):
+            # Extract only the logs that have conflict
+            if(result[i]):
+                event = logs[i]
+                conflictLogs.append([event[0],event[1].split(':')[0].split('-')[0],event[3],event[5]])
+        
+ 
+        return jsonify(logs=conflictLogs)
+
+
+        
+
+
+
 
 if __name__ == '__main__':
     app.run(debug=True)

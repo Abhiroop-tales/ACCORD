@@ -123,7 +123,23 @@ form#register-form button {
 form#register-form button:hover {
     background-color: #3498db;
 }
+.image-container {
+    width: 80%;
+    background-color: white;
+    padding: 20px;
+    border-radius: 10px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    overflow: hidden;
+    margin: 0 auto;
+    align-items: center;
+}
 
+.image-container img {
+    display: block;
+    width: 100%;
+    height: auto;
+    margin: 0 auto;
+}
 
 
 

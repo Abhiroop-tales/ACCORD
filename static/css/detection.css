@@ -62,4 +62,82 @@
   .filter-buttons button:hover {
     background-color: #0063ae;
   }
+
+  .view-button {
+    background-color: #E34234;
+    color: white;
+    border-style: outset;
+    border-width: 2px;
+    border-radius: 10px;
+    border-color: #C21E56;
+    padding: 6px;
+  }
+  .view-button:hover {
+    background-color: #C41E3A;
+  }
+  .view-button:active {
+    background-color: #FF3131;
+    border-style: inset;
+  }
+
+  .resolve-button {
+    background-color: #4CAF50;
+    color: white;
+    border-style: outset;
+    border-width: 2px;
+    border-radius: 10px;
+    border-color: #008000;
+    padding: 6px;
+  }
+  .resolve-button:hover {
+    background-color: #3e8e41;
+  }
+  .resolve-button:active {
+    background-color: #228B22;
+    border-style: inset;
+  }
   
+/* Style the table */
+.conflicts-table {
+  border-collapse: collapse;
+  margin: 0 auto; /* Align the table to the center of the page */
+  width: 90%; /* Adjust the width of the table */
+}
+
+/* Style the table header */
+.conflicts-table  thead {
+  background-color: #f2f2f2 !important;
+}
+
+/* Style the table header text */
+.conflicts-table  th {
+  font-weight: bold;
+  padding: 12px;
+  text-align: left;
+  vertical-align: middle;
+  border: 1px solid #ddd !important;
+}
+
+/* Style the table rows */
+.conflicts-table  tr {
+  border-bottom: 1px solid #ddd !important;
+}
+
+/* Style the table data cells */
+.conflicts-table  td {
+  padding: 8px;
+  text-align: left;
+  vertical-align: middle;
+  border: 1px solid #ddd !important;
+}
+
+/* Add hover effect on table rows */
+.conflicts-table  tbody tr:hover {
+  background-color: #f5f5f5 !important;
+}
+
+/* Center buttons in the last two columns */
+.conflicts-table td:last-child,
+.conflicts-table td:nth-last-child(2) {
+  text-align: center;
+}

@@ -16,6 +16,10 @@
         <center><h1>Welcome to Privacy Conflict Detection Dashboard</h1></center>
         <div class="user-info">
             {{ username }} | <a href="{{ url_for('logout') }}">Logout</a>
+            <button id="refresh-btn" class="btn-refresh" onclick="refreshLogs()">Refresh Logs</button>
+            <div id="refresh_loader" class="loader centered-loader" style="display:none;">
+              <img src="{{ url_for('static', filename='img/loader.gif') }}" alt="Loading...">
+            </div>
         </div>
     </header>
     <nav>
@@ -68,10 +72,12 @@
                 
                 <div class="filter-buttons">
                   <button id="filter-btn" onclick="detectConflicts()">Detect Conflicts</button>
-                  <button id="reset-btn">Reset</button>
+                  <button id="reset-btn" onclick="clearConflicts()">Reset</button>
                 </div>
               </div>
+              
 
+              <p id="detection-label" style="display: none;"></p>
               <div class="image-container">
                 <img src="{{ url_for('static', filename='img/conflictdetection.png') }}" alt="Conflict Detection Process">
               </div>
@@ -80,11 +86,12 @@
                 <img src="{{ url_for('static', filename='img/loader.gif') }}" alt="Loading...">
               </div>
 
-
+              
               <div id="logs-table-container" style="display: none;">
                 <table id="logs-table" class="conflicts-table">
                   <thead>
                     <tr>
+                      <th>ID</th>
                       <th>Activity Time</th>
                       <th>Action</th>
                       <th>Document</th>

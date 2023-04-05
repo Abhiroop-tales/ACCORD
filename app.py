@@ -1,6 +1,7 @@
 from flask import Flask, render_template, request, redirect, url_for, session, flash, jsonify
 from flask_mysqldb import MySQL
 import yaml, hashlib, os, time
+from math import floor
 from functools import wraps
 from serviceAPI import create_user_driveAPI_service, create_directoryAPI_service, create_reportsAPI_service
 from detection import get_filteroptions
@@ -47,6 +48,7 @@ def before_request():
 ########### Route to Log In the user######################
 @app.route('/', methods=['GET', 'POST'])
 def login():
+    session.clear()
     error = None
     if request.method == 'POST':
         email = request.form['email']
@@ -71,8 +73,9 @@ def login():
             user_services[session['username']] = {'drive': drive_service, 'directory': directory_service, 'reports': reportsAPI_service}
 
             # Fetch and Update the logs database
-            activity_logs = Logupdater(mysql, reportsAPI_service)
+            activity_logs = Logupdater(mysql, user_services[session['username']]['reports'])
             activity_logs.updateLogs_database() 
+            del activity_logs
 
 
             if session['user_role'] == 'admin':
@@ -94,6 +97,7 @@ def admin_dashboard():
         directory_service = user_services[session['username']]['directory']
 
         options_actor, options_document = get_filteroptions(drive_service, directory_service)
+        session['user_documents'] = options_document
 
         return render_template('dashboard.html', user_role='admin', username=session['username'], options_actor=options_actor, options_document=options_document)
     else:
@@ -125,7 +129,15 @@ def logout():
     flash('You have been logged out.', 'success')
     return redirect(url_for('login'))
 
-
+############# Route to handle Regresh Logs event ################
+@app.route('/refresh_logs', methods=['POST'])
+def refresh_logs():
+    # Fetch and Update the logs database
+    activity_logs = Logupdater(mysql, user_services[session['username']]['reports'])
+    total_logs = activity_logs.updateLogs_database() 
+    del activity_logs
+    
+    return jsonify(len=str(total_logs))
 
 ########### Route to handle OnClick Detect Function ##############
 @app.route('/detect_conflicts', methods=['POST'])
@@ -169,7 +181,8 @@ def detect_conflicts():
         logs = logs[::-1]
 
         # Only use user Logs that are part of user documents
-        if(session['user_role'] != "admin" and document == "Any"):
+        if(session['user_role'] != "admin" and document == "LIKE '%'"):
+            print("Hello")
             userLogs = []
             for log in logs:
                 docName = log[3]
@@ -193,9 +206,23 @@ def detect_conflicts():
             if(result[i]):
                 event = logs[i]
                 conflictLogs.append([event[0],event[1].split(':')[0].split('-')[0],event[3],event[5]])
+                conflictsCount += 1
+
+        if(T1 == T0):
+            speed = "Inf"
+        else:
+            speed = floor(conflictsCount/(T1-T0))
+        
+        detectTimeLabel = "Time taken to detect "+str(conflictsCount)+" conflicts from "+str(totalLogs)+" activity logs: "+str(round(T1-T0,3))+" seconds. Speed = "+str(speed)+" conflicts/sec"
+
         
  
-        return jsonify(logs=conflictLogs)
+        return jsonify(logs=conflictLogs, detectTimeLabel=detectTimeLabel)
+    
+    else:
+        detectTimeLabel = "No Activites Found for the selected filters"
+        return jsonify(logs=[], detectTimeLabel=detectTimeLabel)
+        
 
 
         

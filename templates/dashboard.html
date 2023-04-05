@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/detection.css') }}">
+
+    
+
+    <title>Conflict Detection-Resolution | Dashboard</title>
+</head>
+<body>
+    <header>
+        <center><h1>Welcome to Privacy Conflict Detection Dashboard</h1></center>
+        <div class="user-info">
+            {{ username }} | <a href="{{ url_for('logout') }}">Logout</a>
+        </div>
+    </header>
+    <nav>
+        <ul>
+            <li><a href="#tab-1">Conflict Detection</a></li>
+            <li><a href="#tab-2">Action Constraints</a></li>
+            {% if user_role == 'admin' %}
+            <li><a href="#admin-tab-1">Activity Logs</a></li>
+            <li><a href="#admin-tab-2">Action Simulator</a></li>
+            <li><a href="#admin-tab-3">Register New User</a></li>
+            {% endif %}
+        </ul>
+    </nav>
+    <main>
+        <!---- CONFLICT DETECTION ---------------------->
+        <div id="tab-1" class="tab-content">
+            <center><h2>Detect conflicts in the Cloud</h2></center>
+            <div class="filter-options">
+                <div class="filter-group">
+                  <label for="dropdown-1">Choose Action:</label>
+                  <select id="dropdown-1">
+                    <option value="Any">Any</option>
+                    <option value="Create">Create</option>
+                    <option value="Delete">Delete</option>
+                    <option value="Edit">Edit</option>
+                    <option value="Move">Move</option>
+                    <option value="Permission Change">Permission Change</option>
+                  </select>
+                </div>
+                
+                <div class="filter-group">
+                  <label for="dropdown-2">Choose Actor:</label>
+                  <select id="dropdown-2">
+                    {% for option in options_actor %}
+                    <option value="{{ option }}">{{ option }}</option>
+                    {% endfor %}
+                  </select>
+                </div>
+                
+                <div class="filter-group">
+                  <label for="dropdown-3">Choose Document:</label>
+                  <select id="dropdown-3">
+                    {% for option in options_document %}
+                    <option value="{{ option }}">{{ option }}</option>
+                    {% endfor %}
+                  </select>
+                </div>
+                
+                <div class="filter-buttons">
+                  <button id="filter-btn">Filter</button>
+                  <button id="reset-btn">Reset</button>
+                </div>
+              </div>
+
+        </div>
+        
+        <!---- CONFLICT DETECTION END---------------------->
+
+
+
+         <!---- ACTION CONSTRAINTS---------------------->
+
+        <div id="tab-2" class="tab-content">
+            <h2>Add Action Constraints</h2>
+            <p>This is the content for Tab 2.</p>
+        </div>
+         <!---- ACTION CONSTRAINTS END---------------------->
+        
+        
+        {% if user_role == 'admin' %}
+         <!---- DRIVE LOG EVENTS ---------------------->
+        <div id="admin-tab-1" class="tab-content">
+            <h2>Drive Log Events</h2>
+            <p>This is the content for Admin Tab 1.</p>
+        </div>
+        <!---- DRIVE LOG EVENTS  END---------------------->
+        
+
+        <!---- SIMULATE ACTIONS---------------------->
+        <div id="admin-tab-2" class="tab-content">
+            <h2>Simulate Actions</h2>
+            <p>This is the content for Admin Tab 2.</p>
+        </div>
+        <!---- SIMULATE ACTIONS END---------------------->
+        
+        <!---- REGISTER or ADD USER---------------------->
+        <div id="admin-tab-3" class="tab-content">
+            <h2>Register New User</h2>
+            <form id="register-form">
+                <label for="username">Username:</label>
+                <input type="text" id="username" name="username" required>
+
+                <label for="password">Password:</label>
+                <input type="password" id="password" name="password" required>
+
+                <label for="email">Email:</label>
+                <input type="email" id="email" name="email" required>
+
+                <label for="role">Role:</label>
+                <select id="role" name="role" required>
+                    <option value="user">User</option>
+                    <option value="admin">Admin</option>
+                </select>
+
+                <button type="submit">Register</button>
+            </form>
+        </div>
+
+        <!---- REGISTER USER END---------------------->
+
+        {% endif %}
+    </main>
+    <script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/detection.js') }}"></script>
+</body>
+</html>

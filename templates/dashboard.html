@@ -5,9 +5,15 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/detection.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/actionconstraint.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/loader.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/userstudy.css') }}">
+
+    
+
 
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
 
     <title>Conflict Detection-Resolution | Dashboard</title>
 </head>
@@ -26,6 +32,7 @@
         <ul>
             <li><a href="#tab-1">Conflict Detection</a></li>
             <li><a href="#tab-2">Action Constraints</a></li>
+            <li><a href="#tab-3">User Study</a></li>
             {% if user_role == 'admin' %}
             <li><a href="#admin-tab-1">Activity Logs</a></li>
             <li><a href="#admin-tab-2">Action Simulator</a></li>
@@ -118,12 +125,158 @@
          <!---- ACTION CONSTRAINTS---------------------->
 
         <div id="tab-2" class="tab-content">
-            <h2>Add Action Constraints</h2>
-            <p>This is the content for Tab 2.</p>
+            <center><h2>Add Action Constraints</h2></center>
+            <form>
+              <div class="grid">
+                <div class="item">
+                    <label for="document">Choose Document:</label>
+                    <select id="documentComboBox"></select>
+                </div>
+                <div class="item">
+                    <label for="action">Choose Action:</label>
+                    <select id="actionComboBox"></select>
+                </div>
+                <div class="item">
+                    <label for="actionType">Choose Action Type:</label>
+                    <select id="actionTypeComboBox"></select>
+                </div>
+                <div class="item">
+                    <label for="actor">Choose Target Actor:</label>
+                    <select id="actorComboBox"></select>
+                </div>
+                <div class="item">
+                    <label for="actionValue">Choose Action Value:</label>
+                    <select id="actionValueComboBox"></select>
+                </div>
+                <div class="item">
+                    <label for="comparator">Set Comparator:</label>
+                    <select id="comparatorBox"></select>
+                </div>
+                <div class="item">
+                    <label for="trueValue">Enter Allowed Values:</label>
+                    <input type="text" id="trueValueEdit" disabled>
+                </div>
+            </div>
+            
+            <div class="filter-buttons">
+                <button id="clearButton">Clear</button>
+                <button id="addConstraintButton">Add Constraint</button>
+            </div>
+            <div class="constraint">
+                <p id="constraintLabel"></p>
+            </div>
+          </form>
+            
         </div>
          <!---- ACTION CONSTRAINTS END---------------------->
         
-        
+        <!---------  USER STUDY TAB DETAILS START -->
+         <div id="tab-3" class="tab-content">
+            <center><h2>User study tasks</h2></center>
+
+            <ul class="list-group list-group-flush">
+              <li class="list-group-item task active" id="task1" onclick="openModal('task1-modal')">Task 1</li>
+              <li class="list-group-item task disabled" id="task2" onclick="openModal('task2-modal')">Task 2</li>
+              <li class="list-group-item task disabled" id="task3" onclick="openModal('task3-modal')">Task 3</li>
+              <li class="list-group-item task disabled" id="task4" onclick="openModal('task4-modal')">Task 4</li>
+              <li class="list-group-item task disabled" id="task5" onclick="openModal('task5-modal')">Task 5</li>
+          </ul>
+          <p class="thank-you-message" style="display: none;">Thank you for providing your responses!</p>
+      </div>          
+            
+       
+
+         <!-- Task modal-1 -->
+          <div class="modal" tabindex="-1" id="task1-modal">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <center><h5 class="modal-title">Task 1</h5></center>
+                        <button type="button" class="close-btn" onclick="closeModal('task1-modal')">&times;</button>
+                        
+                    </div>
+                    <div class="modal-body">
+                        <!-- Task 1 content and questions go here -->
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-primary complete-task" data-bs-dismiss="modal" onclick="closeModal('task1-modal')">Complete Task 1</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+          <!-- Task modal-2 -->
+          <div class="modal" tabindex="-1" id="task2-modal">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">Task 2</h5>
+                    </div>
+                    <div class="modal-body">
+                        <!-- Task 1 content and questions go here -->
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-primary complete-task" data-bs-dismiss="modal" onclick="closeModal('task2-modal')">Complete Task 2</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Task modal-3 -->
+        <div class="modal" tabindex="-1" id="task3-modal">
+          <div class="modal-dialog">
+              <div class="modal-content">
+                  <div class="modal-header">
+                      <h5 class="modal-title">Task 3</h5>
+                  </div>
+                  <div class="modal-body">
+                      <!-- Task 1 content and questions go here -->
+                  </div>
+                  <div class="modal-footer">
+                      <button type="button" class="btn btn-primary complete-task" data-bs-dismiss="modal" onclick="closeModal('task3-modal')">Complete Task 3</button>
+                  </div>
+              </div>
+          </div>
+      </div>
+
+              <!-- Task modal-4 -->
+        <div class="modal" tabindex="-1" id="task4-modal">
+          <div class="modal-dialog">
+              <div class="modal-content">
+                  <div class="modal-header">
+                      <h5 class="modal-title">Task 4</h5>
+                  </div>
+                  <div class="modal-body">
+                      <!-- Task 1 content and questions go here -->
+                  </div>
+                  <div class="modal-footer">
+                      <button type="button" class="btn btn-primary complete-task" data-bs-dismiss="modal" onclick="closeModal('task4-modal')">Complete Task 4</button>
+                  </div>
+              </div>
+          </div>
+      </div>
+
+           <!-- Task modal-5 -->
+           <div class="modal" tabindex="-1" id="task5-modal">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">Task 5</h5>
+                    </div>
+                    <div class="modal-body">
+                        <!-- Task 1 content and questions go here -->
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-primary complete-task" data-bs-dismiss="modal" onclick="closeModal('task5-modal')">Complete Task 5</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    
+
+
+        <!----------------USER STUDY TAB END -->
+
         {% if user_role == 'admin' %}
          <!---- DRIVE LOG EVENTS ---------------------->
         <div id="admin-tab-1" class="tab-content">
@@ -142,7 +295,7 @@
         
         <!---- REGISTER or ADD USER---------------------->
         <div id="admin-tab-3" class="tab-content">
-            <h2>Register New User</h2>
+            <center><h2>Register New User</h2></center>
             <form id="register-form">
                 <label for="username">Username:</label>
                 <input type="text" id="username" name="username" required>
@@ -169,5 +322,7 @@
     </main>
     <script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
     <script src="{{ url_for('static', filename='js/detection.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/actionconstraint.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/userstudy.js') }}"></script>
 </body>
 </html>

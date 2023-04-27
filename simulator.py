@@ -1,0 +1,298 @@
+from googleapiclient.http import MediaInMemoryUpload
+from serviceAPI import create_simulator_driveAPI_service
+from extractSimulatorList import getFileList, getFolderList, getUserList
+import random, base64, time
+from datetime import datetime
+from googleapiclient.errors import HttpError
+from sqlconnector import DatabaseQuery
+
+
+
+# Class to initialize a user subject to perform actions
+class UserSubject():
+    def __init__(self, user_name, user_dict):
+        self.userName = user_name
+
+        # Create DriveAPI service for the user and fetch the file List, folder List and the target user List 
+        self.service = create_simulator_driveAPI_service(user_dict[user_name])
+        totalList = list(user_dict.keys())
+        totalList.remove(user_name)
+        self.usersList = totalList
+        self.userEmail = self.userName+'@abhiroop.shop'
+
+
+# Class to perform actions as a user
+class PerformActions():
+    def __init__(self, actionCount, actions, actionDelay, constraintAction,mysql):
+        self.actionCount = actionCount
+        self.actionDelay = actionDelay
+        self.actions = actions
+        self.userSubject = None
+        self.constraintaction = constraintAction
+        self.db = DatabaseQuery(mysql.connection, mysql.connection.cursor())
+    
+    def create_user_subject(self, user_name, user_dict):
+        self.userSubject = UserSubject(user_name, user_dict)
+
+    # Check permissions to Edit and share the file
+    def check_permissions(self, fileID):
+        try:
+            file = self.userSubject.service.files().get(fileId=fileID, fields="permissions").execute()
+            email = self.userSubject.userEmail  # Make sure you are using the correct attribute for the user's email
+            can_edit = False
+            for permission in file['permissions']:
+                if(email == permission.get('emailAddress') and permission.get('role') in ['writer', 'owner']):
+                    can_edit = True
+                    break
+            return can_edit
+        except HttpError as error:
+            return False
+
+    # Simulate Permission Change actions
+    def simulate_permissionChange(self, fileID):
+        actionTypes = ['Add', 'Remove', 'Update']
+        actionType = random.choice(actionTypes)
+        fileUserList, userIdList = getUserList(self.userSubject.service, fileID)
+        roles = ['writer', 'commenter', 'reader']
+        
+        
+        # Add Constraint to the action being performed
+        if(self.constraintaction == "Permission Change"):
+            
+
+            file = self.userSubject.service.files().get(fileId=fileID, fields='name').execute()
+            document_name = file['name']
+
+            file = self.userSubject.service.files().get(fileId=fileID, fields='owners').execute()
+            owner_email = file['owners'][0]['emailAddress']
+        
+            constraints = [document_name, fileID, self.constraintaction, actionType, self.userSubject.userEmail, "FALSE", "eq",owner_email, '-']
+            self.db.add_action_constraint(constraints)
+           
+            
+
+        #########################
+
+        match actionType:
+            # Add User to the file
+            case "Add":
+                new_userList = list(set(self.userSubject.usersList).difference(fileUserList))
+
+                if new_userList:
+                    permission = {
+                        'type': 'user',
+                        'role': random.choice(roles),
+                        'emailAddress': random.choice(new_userList)
+                    }
+                    self.userSubject.service.permissions().create(fileId=fileID, body=permission, sendNotificationEmail=False).execute()
+                    return True
+
+            case "Remove":
+                # Remove the actor ID from the user ID list and choose a random user to remove permission
+                userIdList.pop(fileUserList.index(self.userSubject.userName))
+                if userIdList:
+                    # Fetch the permissions for the file
+                    permissions = self.userSubject.service.permissions().list(fileId=fileID).execute()
+
+                    # Filter the permissions to exclude the owner
+                    non_owner_permissions = [
+                        permission for permission in permissions.get("permissions", [])
+                        if permission.get("role") != "owner" and permission.get("id") in userIdList
+                    ]
+
+                    # If there are non-owner permissions, remove a random one
+                    if non_owner_permissions:
+                        random_permission = random.choice(non_owner_permissions)
+                        self.userSubject.service.permissions().delete(
+                            fileId=fileID, permissionId=random_permission["id"]
+                        ).execute()
+                        return True
+
+
+            case "Update":
+                # Remove the actor ID from the user ID list and choose a random user to update permission
+                userIdList.pop(fileUserList.index(self.userSubject.userName))
+                if userIdList:
+                    # Fetch the permissions for the file
+                    permissions = self.userSubject.service.permissions().list(fileId=fileID).execute()
+
+                    # Check if the user has the 'writer' or 'owner' role
+                    has_permissionChange_permission = False
+                    for permission in permissions.get("permissions", []):
+                        if permission.get("emailAddress") == self.userSubject.userEmail:
+                            if permission.get("role") in ["writer", "owner"]:
+                                has_permissionChange_permission = True
+                            break
+                    
+                    # Filter the permissions to exclude the owner
+                    non_owner_permissions = [
+                        permission for permission in permissions.get("permissions", [])
+                        if permission.get("role") != "owner" and permission.get("id") in userIdList
+                    ]
+
+                    # If there are non-owner permissions, remove a random one
+                    if non_owner_permissions and has_permissionChange_permission:
+                        userID = random.choice(non_owner_permissions)
+                        permission = self.userSubject.service.permissions().get(fileId=fileID, permissionId = userID).execute()
+                        user_role = [permission['role']]
+                        new_user_role = random.choice(list(set(roles).difference(user_role)))
+                        new_permission = {'role' : new_user_role }
+                        self.userSubject.service.permissions().update(fileId=fileID, permissionId = userID, body=new_permission).execute()
+                        return True
+            
+            case _:
+                pass
+        
+        return False
+
+   
+    # Simulate Edit action 
+    def simulate_edit(self, fileID):
+        file = self.userSubject.service.files().get(fileId=fileID).execute()
+        mime_type = file['mimeType']
+
+        # Check if file is of Document Type
+        if(mime_type == 'application/vnd.google-apps.document'):
+            
+            try:
+                permissions = self.userSubject.service.permissions().list(fileId=fileID).execute()
+            except HttpError as error:
+                if "insufficientFilePermissions" in error.content.decode():
+                    return False
+                else:
+                    raise
+            # Check if the user has the 'writer' or 'owner' role
+            has_edit_permission = False
+            for permission in permissions.get("permissions", []):
+                if permission.get("emailAddress") == self.userSubject.userEmail:
+                    if permission.get("role") in ["writer", "owner"]:
+                        has_edit_permission = True
+                    break
+
+            if has_edit_permission:
+                fileContent = "Hello World! File has been Edited on " + str(datetime.now())
+                encoded_content = base64.b64encode(fileContent.encode())
+                decoded_content = base64.b64decode(encoded_content).decode()
+                media = MediaInMemoryUpload(decoded_content.encode(), mimetype=mime_type)
+                file = self.userSubject.service.files().update(fileId=fileID, media_body=media).execute()
+                return True
+
+        return False
+
+
+    # Simulate Move Action
+    def simulate_move(self, fileID, folderList):
+        # Retrieve the current parent(s) of the file
+        file = self.userSubject.service.files().get(fileId=fileID, fields='parents').execute()
+        if file:
+            previous_parents = ",".join(file['parents'])
+            old_parents_list = file['parents']
+            total_FolderList = folderList
+            new_FolderList = list(set(total_FolderList).difference(old_parents_list))
+            if new_FolderList and fileID not in new_FolderList:
+                # Move the file to the new folder
+                newFolder = random.choice(new_FolderList)
+                self.userSubject.service.files().update(fileId=fileID, addParents=newFolder, removeParents=previous_parents, fields='id, parents').execute()
+                return True
+            
+        return False
+
+
+    # Simulate Delete Action
+    def simulate_delete(self, fileID):
+        if(self.check_permissions(fileID)):
+            self.userSubject.service.files().delete(fileId=fileID).execute()
+            return True
+        
+        return False
+
+    
+    # Simulate Create Action
+    def simulate_create(self):
+        # Define the file metadata
+        total_FolderList = getFolderList(self.userSubject.service)
+        fruitNames = ["apple", "banana", "cherry", "date", "elderberry", "fig", "grape", "honeydew", "kiwi", "lemon", "orange", "peach", "pear", "pineapple", "strawberry", "watermelon", "london", "paris", "newyork", "tokyo", "berlin", "mumbai", "report", "document", "presentation", "spreadsheet", "invoice", "receipt"]
+        file_metadata = {
+            'name': random.choice(fruitNames) + '_' + datetime.now().strftime("%Y-%m-%d_%H-%M-%S") + '.docx',
+            'mimeType': 'application/vnd.google-apps.document'
+            }
+        if(random.randint(0,2) % 2 != 0):
+            file_metadata['parents'] = [random.choice(total_FolderList)]
+        
+        self.userSubject.service.files().create(body=file_metadata, media_body=None).execute()
+        return True
+
+    # Method to perform actions based on the Selected options
+    def perform_actions(self, actorsDict):
+        try:
+            actorList = list(actorsDict.keys())
+            # Perform actions until the action Count parameters is zero
+            while(self.actionCount > 0):
+                simval = False
+                # Choose an actor and an action
+                actor = random.choice(actorList)
+                action = self.actions[len(self.actions)-self.actionCount]
+                delay = self.actionDelay[len(self.actionDelay)-self.actionCount]
+                
+                self.create_user_subject(actor, actorsDict)
+                fileList = getFileList(self.userSubject.service)
+                folderList = getFolderList(self.userSubject.service)
+
+                file_object = random.choice(fileList)
+                
+                # Simulate Actions based on action selected
+                match action:
+                    case "Create":
+                        simval = self.simulate_create()
+
+                    case "Delete":
+                        simval =self.simulate_delete(file_object)
+                    
+                    case "Edit":
+                        file = self.userSubject.service.files().get(fileId=file_object).execute()
+                        mime_type = file['mimeType']
+                        while(mime_type != 'application/vnd.google-apps.document'):
+                            file_object = random.choice(fileList)
+                            file = self.userSubject.service.files().get(fileId=file_object).execute()
+                            mime_type = file['mimeType']
+                        
+                        simval = self.simulate_edit(file_object)
+
+                    case "Move":
+                        simval = self.simulate_move(file_object, folderList)
+                    
+                    case "Permission Change":
+                        simval = self.simulate_permissionChange(file_object)
+                    
+                    case _:
+                        pass
+                        
+                
+                if(simval):
+                    #print(action)
+                    self.actionCount -= 1
+                    time.sleep(int(delay))
+
+                del self.userSubject
+
+            
+        except LookupError as le:
+            return("Error in the key or index !!\n" + str(le))
+        except ValueError as ve:
+            return("Error in Value Entered !!\n" + str(ve))
+        except TypeError as te:
+            return("Error in Type matching !!\n" + str(te))  
+            
+            
+
+
+
+
+
+        
+
+
+
+# Debug
+#P = PerformActions(actionCount, actions, delays)
+#P.perform_actions({'abhi09@abhiroop.shop': 'token_abhi09.json', 'abt@abhiroop.shop': 'token_abt.json'})

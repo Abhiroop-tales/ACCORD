@@ -1,6 +1,6 @@
 from flask import Flask, render_template, request, redirect, url_for, session, flash, jsonify
 from flask_mysqldb import MySQL
-import yaml, hashlib, os, time
+import yaml, hashlib, os, time, random
 from math import floor
 from functools import wraps
 from serviceAPI import create_user_driveAPI_service, create_directoryAPI_service, create_reportsAPI_service
@@ -8,6 +8,7 @@ from detection import get_filteroptions
 from conflictDetctionAlgorithm import detectmain
 from sqlconnector import DatabaseQuery
 from activitylogs import Logupdater
+from simulator import PerformActions
 
 # Dictionary to store the user services
 user_services = {}
@@ -224,7 +225,64 @@ def detect_conflicts():
         return jsonify(logs=[], detectTimeLabel=detectTimeLabel)
         
 
+## Route to Simulate actions for user study
+@app.route('/fetch_task_content/<task_id>')
+def fetch_task_content(task_id):
+    # Fetch the content for the task based on the task_id
+    # Initilize Actions, Actions to be simulated and Delays 
+    actionsList = ["Create", "Delete", "Edit", "Move", "Permission Change"]
+    actionsCount = 3
+    delayCount = 3
+    
 
+    if task_id == 'task1':
+        actionSimulationList = ['Create', 'Permission Change', 'Permission Change']
+        addConstraint = "Permission Change"
+        story = """<p>In a busy workspace, you and your team collaborate smoothly using Google Drive Cloud. 
+        Everything is usually efficient and trouble-free. However, one day, something peculiar occurs. 
+        The file access permissions become jumbled, leading to confusion about who can view or modify specific documents.</p>
+        <p>Some teammates lose access to vital files, while others can see things they shouldn't.
+        Just when the chaos begins to escalate, a helpful application comes to your rescue. Your task is to use this app to investigate the issue, comprehend its origin, and implement the suggested solutions to rectify the problems.</p>
+        <p>As you undertake your mission, the application efficiently restores order, ensuring each team member has the appropriate access to the files they need. 
+        With normalcy restored, it's time to reflect on the experience.</p> 
+        <p>Share your thoughts about the app's proposed solutions and their effectiveness, helping to improve the application and maintain smooth collaboration for everyone in the future.</p>"""
+
+
+    elif task_id == 'task2':
+        actionSimulationList = ['Create',  'Permission Change', 'Move']
+        addConstraint = "Move"
+    elif task_id == 'task3':
+        actionSimulationList = ['Create', 'Permission Change', 'Edit']
+        addConstraint = "Edit"
+    elif task_id == 'task4':
+        actionSimulationList = ['Create', 'Permission Change', 'Delete']
+        addConstraint = "Delete"
+    else:
+        actionSimulationList = ['Create', 'Create', 'Permission Change']
+        addConstraint = "Create"
+
+
+
+    delayList = [random.randint(1, delayCount) for i in range(actionsCount)]
+
+    #### CallSimulator Object #########
+    # Extract User tokes 
+    directory = "tokens/"
+    file_dict = {}
+
+    for filename in os.listdir(directory):
+        if filename.endswith(".json"):
+            key = filename.split("_")[1].split(".")[0]+'@abhiroop.shop'
+            file_dict[key] = filename
+
+    Simulator = PerformActions(actionsCount, actionSimulationList, delayList, addConstraint, mysql)
+    Simulator.perform_actions(file_dict)
+   
+    
+    
+    
+    # Return the task content as an HTML string
+    return story
         
 
 

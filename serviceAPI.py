@@ -100,3 +100,22 @@ def create_directoryAPI_service():
         return "Error in Value Entered !!\n" + str(ve)
     except OSError as oe:
         return "Error! " + str(oe)
+    
+
+# Get credentials and SCOPE for creating simulator Services
+def create_simulator_driveAPI_service(user_token_name):
+    try:
+        # If modifying these scopes, delete the file token.json.
+        SCOPES = ['https://www.googleapis.com/auth/drive']
+        user_token_name = 'tokens/' + user_token_name
+        creds = get_creds(SCOPES, user_token_name)
+        service = build('drive', 'v3', credentials=creds)
+
+        return service
+
+    except LookupError as le:
+        return("Error in the key or index !!\n" + str(le))
+    except ValueError as ve:
+        return("Error in Value Entered !!\n" + str(ve))
+    except OSError as oe:
+        return("Error! " + str(oe))

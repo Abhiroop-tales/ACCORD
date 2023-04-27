@@ -1,15 +1,53 @@
+let taskContentCache = {};
+let completedTasks = [];
 $(document).ready(function() {
-  // Disable all task items except the first one
-  $(".task:not(:first-child)").addClass("disabled");
+      // Disable all task items except the first one
+      $(".task:not(:first-child)").addClass("disabled");
 
-  // Add click event listener for tasks
-  $(".task").click(function() {
-      if (!$(this).hasClass("disabled")) {
-          // Open task modal
-          let taskModalId = $(this).attr("id") + "-modal";
-          openModal(taskModalId);
-      }
-  });
+    // Retrieve completed tasks from sessionStorage
+  let storedCompletedTasks = sessionStorage.getItem('completedTasks');
+  if (storedCompletedTasks) {
+    completedTasks = JSON.parse(storedCompletedTasks);
+    let lastTaskCompleted = null;
+    completedTasks.forEach(taskId => {
+      let task = document.getElementById(taskId);
+      let nextTask = task.nextElementSibling;
+
+      task.classList.remove("active");
+      task.classList.add("completed");
+      task.classList.add("disabled");
+      task.removeAttribute("data-bs-toggle");
+      task.removeAttribute("data-bs-target");
+      task.insertAdjacentHTML("beforeend", "<span class='completed-text'> (Task completed)</span>");
+
+      lastTaskCompleted = task;
+    });
+
+  // Activate the next task after the last completed task
+  if (lastTaskCompleted) {
+    activateNextTask(lastTaskCompleted);
+  }
+  }
+
+
+
+
+  // Retrieve task content cache from sessionStorage
+  let storedCache = sessionStorage.getItem('taskContentCache');
+  if (storedCache) {
+    taskContentCache = JSON.parse(storedCache);
+  }
+
+
+ // Add click event listener for tasks
+$(".task").click(function() {
+    if (!$(this).hasClass("disabled")) {
+        // Open task modal
+        let taskModalId = $(this).attr("id") + "-modal";
+        let taskId = $(this).attr("id");
+        openModal(taskModalId, taskId);
+    }
+});
 
   // Add click event listener for completing tasks
   $(".complete-task").click(function() {
@@ -34,6 +72,18 @@ $(document).ready(function() {
       }
   });
 
+
+  // Activate NExt Task for the User
+  function activateNextTask(task) {
+    let nextTask = task.nextElementSibling;
+    if (nextTask) {
+      nextTask.classList.remove("disabled");
+      nextTask.classList.add("active");
+      nextTask.setAttribute("data-bs-toggle", "modal"); // Add the data-bs-toggle attribute back
+    }
+  }
+
+
   // Add this function to handle task completion
   function completeTask(taskId) {
       let task = document.getElementById(taskId);
@@ -49,6 +99,11 @@ $(document).ready(function() {
           nextTask.classList.remove("disabled");
           nextTask.classList.add("active");
       }
+
+      // Store the completed task in the array and update sessionStorage
+    completedTasks.push(taskId);
+    sessionStorage.setItem('completedTasks', JSON.stringify(completedTasks));
+    activateNextTask(task);
   }
 
   // Add event listeners to close buttons
@@ -56,12 +111,63 @@ $(document).ready(function() {
       let modalId = $(this).closest(".modal").attr("id");
       closeModal(modalId);
   });
-  function openModal(modalId) {
-      document.getElementById(modalId).style.display = 'block';
-      setTimeout(() => {
-          document.getElementById(modalId).classList.add('show');
-      }, 50);
+
+
+
+  // Fetch the task
+  function fetchTaskContent(taskId, modalId, callback) {
+    $.ajax({
+      url: `/fetch_task_content/${taskId}`,
+      type: "GET",
+      beforeSend: function() {
+        // Display loader while waiting for the response
+        $("#loader").show();
+      },
+      success: function(data) {
+        // Update the task content cache
+      taskContentCache[taskId] = data;
+      sessionStorage.setItem('taskContentCache', JSON.stringify(taskContentCache));
+      // Insert the fetched data into the respective modal-body
+        $(`#${modalId} .modal-body`).html(data);
+      callback(data);
+      },
+      complete: function() {
+        // Hide the loader when the response is received
+        $("#loader").hide();
+      },
+      error: function(jqXHR, textStatus, errorThrown) {
+        console.error(`Error fetching task content: ${textStatus} - ${errorThrown}`);
+      }
+    });
   }
+
+
+  // Show the Modal
+  function showModal(modalId) {
+    document.getElementById(modalId).style.display = 'block';
+    setTimeout(() => {
+      document.getElementById(modalId).classList.add('show');
+    }, 50);
+  }
+
+  // Open Modal
+  function openModal(modalId, taskId) {
+    // Check if the content is cached
+    if (taskContentCache[taskId]) {
+      $("#" + modalId).find(".modal-body").html(taskContentCache[taskId]);
+      showModal(modalId);
+    } else {
+      fetchTaskContent(taskId, modalId, function(taskContent) {
+        // Cache the fetched content
+        taskContentCache[taskId] = taskContent;
+        
+        // Update modal content with the fetched task content
+        $("#" + modalId).find(".modal-body").html(taskContent);
+        showModal(modalId);
+      });
+    }
+  }
+  
 
   function closeModal(modalId) {
     document.getElementById(modalId).classList.remove('show');

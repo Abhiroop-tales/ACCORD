@@ -186,8 +186,8 @@ class DatabaseQuery:
             allowed_value = constraints[8]
 
             self.cursor.execute("INSERT INTO action_constraints (doc_name,doc_id,action,action_type,constraint_target,action_value,comparator,constraint_owner,allowed_value) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s)", (doc_name,doc_id,action,action_type,constraint_target,action_value,comparator,constraint_owner,allowed_value))
-
             self.db.commit()
+            
 
         except LookupError as le:
             return "Error in the key or index !!\n" + str(le)

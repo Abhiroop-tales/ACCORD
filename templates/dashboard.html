@@ -8,6 +8,7 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='css/actionconstraint.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/loader.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/userstudy.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/modal.css') }}">
 
     
 
@@ -173,14 +174,16 @@
         <!---------  USER STUDY TAB DETAILS START -->
          <div id="tab-3" class="tab-content">
             <center><h2>User study tasks</h2></center>
-
+            <div id="loader" class="loader" style="display:none;">
+                <img src="{{ url_for('static', filename='img/loader2.gif') }}" alt="Loading...">
+            </div>
             <ul class="list-group list-group-flush">
-              <li class="list-group-item task active" id="task1" onclick="openModal('task1-modal')">Task 1</li>
-              <li class="list-group-item task disabled" id="task2" onclick="openModal('task2-modal')">Task 2</li>
-              <li class="list-group-item task disabled" id="task3" onclick="openModal('task3-modal')">Task 3</li>
-              <li class="list-group-item task disabled" id="task4" onclick="openModal('task4-modal')">Task 4</li>
-              <li class="list-group-item task disabled" id="task5" onclick="openModal('task5-modal')">Task 5</li>
-          </ul>
+                <li class="list-group-item task active" id="task1" onclick="openModal('task1-modal', 'task1')">Task 1: Permission Change Conflicts</li>
+                <li class="list-group-item task disabled" id="task2" onclick="openModal('task2-modal', 'task2')">Task 2: Move Conflicts</li>
+                <li class="list-group-item task disabled" id="task3" onclick="openModal('task3-modal', 'task3')">Task 3: Edit Conflicts</li>
+                <li class="list-group-item task disabled" id="task4" onclick="openModal('task4-modal', 'task4')">Task 4: Delete Conflicts</li>
+                <li class="list-group-item task disabled" id="task5" onclick="openModal('task5-modal', 'task5')">Task 5: Create Conflicts</li>
+              </ul>
           <p class="thank-you-message" style="display: none;">Thank you for providing your responses!</p>
       </div>          
             
@@ -191,7 +194,7 @@
             <div class="modal-dialog">
                 <div class="modal-content">
                     <div class="modal-header">
-                        <center><h5 class="modal-title">Task 1</h5></center>
+                        <center><h5 class="modal-title">Permission Change Conflicts</h5></center>
                         <button type="button" class="close-btn" onclick="closeModal('task1-modal')">&times;</button>
                         
                     </div>
@@ -210,10 +213,11 @@
             <div class="modal-dialog">
                 <div class="modal-content">
                     <div class="modal-header">
-                        <h5 class="modal-title">Task 2</h5>
+                        <center><h5 class="modal-title">Move Conflicts</h5></center>
+                        <button type="button" class="close-btn" onclick="closeModal('task1-modal')">&times;</button>
                     </div>
                     <div class="modal-body">
-                        <!-- Task 1 content and questions go here -->
+                        
                     </div>
                     <div class="modal-footer">
                         <button type="button" class="btn btn-primary complete-task" data-bs-dismiss="modal" onclick="closeModal('task2-modal')">Complete Task 2</button>
@@ -227,7 +231,8 @@
           <div class="modal-dialog">
               <div class="modal-content">
                   <div class="modal-header">
-                      <h5 class="modal-title">Task 3</h5>
+                    <center><h5 class="modal-title">Edit Conflicts</h5></center>
+                    <button type="button" class="close-btn" onclick="closeModal('task1-modal')">&times;</button>
                   </div>
                   <div class="modal-body">
                       <!-- Task 1 content and questions go here -->
@@ -244,7 +249,8 @@
           <div class="modal-dialog">
               <div class="modal-content">
                   <div class="modal-header">
-                      <h5 class="modal-title">Task 4</h5>
+                    <center><h5 class="modal-title">Delete Conflicts</h5></center>
+                    <button type="button" class="close-btn" onclick="closeModal('task1-modal')">&times;</button>
                   </div>
                   <div class="modal-body">
                       <!-- Task 1 content and questions go here -->
@@ -261,7 +267,8 @@
             <div class="modal-dialog">
                 <div class="modal-content">
                     <div class="modal-header">
-                        <h5 class="modal-title">Task 5</h5>
+                        <center><h5 class="modal-title">Create Conflicts</h5></center>
+                        <button type="button" class="close-btn" onclick="closeModal('task1-modal')">&times;</button>
                     </div>
                     <div class="modal-body">
                         <!-- Task 1 content and questions go here -->
@@ -324,5 +331,6 @@
     <script src="{{ url_for('static', filename='js/detection.js') }}"></script>
     <script src="{{ url_for('static', filename='js/actionconstraint.js') }}"></script>
     <script src="{{ url_for('static', filename='js/userstudy.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/modal.js') }}"></script>
 </body>
 </html>

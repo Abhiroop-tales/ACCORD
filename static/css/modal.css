@@ -1,0 +1,31 @@
+.modal-body {
+    font-size: 1.1em;
+    line-height: 1.5;
+    color: #333;
+    text-align: justify;
+    background-color: #f5f5f5;
+    padding: 20px;
+    border-radius: 5px;
+  }
+  
+  .modal-body p {
+    margin-bottom: 1em;
+    text-indent: 1em;
+  }
+  
+  .modal-body h1,
+  .modal-body h2,
+  .modal-body h3,
+  .modal-body h4,
+  .modal-body h5 {
+    margin-top: 1.5em;
+    margin-bottom: 1em;
+    font-weight: bold;
+  }
+  
+  .modal-body ul,
+  .modal-body ol {
+    margin-left: 2em;
+    margin-bottom: 1em;
+  }
+  

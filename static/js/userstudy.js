@@ -4,6 +4,13 @@ $(document).ready(function() {
       // Disable all task items except the first one
       $(".task:not(:first-child)").addClass("disabled");
 
+    // Retrieve currentDateTime from sessionStorage
+  let storedCurrentDateTime = sessionStorage.getItem("currentDateTime");
+  if (storedCurrentDateTime) {
+    // Update the current-date p tag with the storedCurrentDateTime value
+    $("#current-date").attr("value", storedCurrentDateTime);
+  }
+
     // Retrieve completed tasks from sessionStorage
   let storedCompletedTasks = sessionStorage.getItem('completedTasks');
   if (storedCompletedTasks) {
@@ -116,10 +123,20 @@ $(".task").click(function() {
 
   // Fetch the task
   function fetchTaskContent(taskId, modalId, callback) {
+    const now = new Date();
+    const currentDateTime = now.toISOString();
+
+      // Update the current-date p tag with the currentDateTime value
+    $("#current-date").attr("value", currentDateTime);
+
+    // Store the currentDateTime value in sessionStorage for the user's login session
+    sessionStorage.setItem("currentDateTime", currentDateTime);
+
     $.ajax({
       url: `/fetch_task_content/${taskId}`,
       type: "GET",
       beforeSend: function() {
+        
         // Display loader while waiting for the response
         $("#loader").show();
       },
@@ -127,8 +144,10 @@ $(".task").click(function() {
         // Update the task content cache
       taskContentCache[taskId] = data;
       sessionStorage.setItem('taskContentCache', JSON.stringify(taskContentCache));
-      // Insert the fetched data into the respective modal-body
-        $(`#${modalId} .modal-body`).html(data);
+      // Insert the fetched data into the respective modal-narration
+      const $modalNarration = $(`#${modalId} .modal-narration`);
+      $modalNarration.html(data);
+
       callback(data);
       },
       complete: function() {
@@ -154,15 +173,16 @@ $(".task").click(function() {
   function openModal(modalId, taskId) {
     // Check if the content is cached
     if (taskContentCache[taskId]) {
-      $("#" + modalId).find(".modal-body").html(taskContentCache[taskId]);
+      $("#" + modalId).find(".modal-narration").html(taskContentCache[taskId]);
       showModal(modalId);
     } else {
+      
       fetchTaskContent(taskId, modalId, function(taskContent) {
         // Cache the fetched content
         taskContentCache[taskId] = taskContent;
         
         // Update modal content with the fetched task content
-        $("#" + modalId).find(".modal-body").html(taskContent);
+        $("#" + modalId).find(".modal-narration").html(taskContent);
         showModal(modalId);
       });
     }

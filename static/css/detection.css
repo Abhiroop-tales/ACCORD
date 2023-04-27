@@ -74,10 +74,12 @@
   }
   .view-button:hover {
     background-color: #C41E3A;
+    cursor: pointer;
   }
   .view-button:active {
     background-color: #FF3131;
     border-style: inset;
+    cursor: pointer;
   }
 
   .resolve-button {
@@ -91,10 +93,12 @@
   }
   .resolve-button:hover {
     background-color: #3e8e41;
+    cursor: pointer;
   }
   .resolve-button:active {
     background-color: #228B22;
     border-style: inset;
+    cursor: pointer;
   }
   
 /* Style the table */

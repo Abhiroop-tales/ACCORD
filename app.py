@@ -10,6 +10,8 @@ from sqlconnector import DatabaseQuery
 from activitylogs import Logupdater
 from simulator import PerformActions
 
+
+
 # Dictionary to store the user services
 user_services = {}
 
@@ -143,9 +145,16 @@ def refresh_logs():
 ########### Route to handle OnClick Detect Function ##############
 @app.route('/detect_conflicts', methods=['POST'])
 def detect_conflicts():
+    # Fetch and Update the logs database
+    activity_logs = Logupdater(mysql, user_services[session['username']]['reports'])
+    total_logs = activity_logs.updateLogs_database() 
+    del activity_logs
+
     action = request.form.get('action')
     actor = request.form.get('actor')
     document = request.form.get('document')
+    currentDateTime = request.form.get('current_date')
+    
 
     if(action == "Any"):
         action = "LIKE '%'"
@@ -181,18 +190,21 @@ def detect_conflicts():
         conflictLogs = []
         logs = logs[::-1]
 
+        
+
         # Only use user Logs that are part of user documents
         if(session['user_role'] != "admin" and document == "LIKE '%'"):
-            print("Hello")
+            
             userLogs = []
             for log in logs:
+                activityTime = log[0]
                 docName = log[3]
-                if docName in session['user_documents']:
+                if docName in session['user_documents'] and activityTime>= currentDateTime:
                     userLogs.append(log)
             
             logs = userLogs
 
-
+        print(currentDateTime)
         # Calculate time taken by the detection Engine to detect conflicts
         T0 = time.time()
         result = detectmain(logs,actionConstraints)
@@ -201,12 +213,13 @@ def detect_conflicts():
         # Update the display table only with Conflicts and print the detection Time
         totalLogs = len(result)
         conflictsCount = 0
-
+        briefLogs = []
         for i in range(totalLogs):
             # Extract only the logs that have conflict
             if(result[i]):
                 event = logs[i]
                 conflictLogs.append([event[0],event[1].split(':')[0].split('-')[0],event[3],event[5]])
+                briefLogs.append(event)
                 conflictsCount += 1
 
         if(T1 == T0):
@@ -218,25 +231,27 @@ def detect_conflicts():
 
         
  
-        return jsonify(logs=conflictLogs, detectTimeLabel=detectTimeLabel)
+        return jsonify(logs=conflictLogs, detectTimeLabel=detectTimeLabel, briefLogs=briefLogs)
     
     else:
         detectTimeLabel = "No Activites Found for the selected filters"
-        return jsonify(logs=[], detectTimeLabel=detectTimeLabel)
+        return jsonify(logs=[], detectTimeLabel=detectTimeLabel, briefLogs=[])
         
 
 ## Route to Simulate actions for user study
 @app.route('/fetch_task_content/<task_id>')
 def fetch_task_content(task_id):
+    
+
     # Fetch the content for the task based on the task_id
     # Initilize Actions, Actions to be simulated and Delays 
     actionsList = ["Create", "Delete", "Edit", "Move", "Permission Change"]
-    actionsCount = 3
+    actionsCount = 4
     delayCount = 3
     
 
     if task_id == 'task1':
-        actionSimulationList = ['Create', 'Permission Change', 'Permission Change']
+        actionSimulationList = ['Create'] + ['Permission Change']*3
         addConstraint = "Permission Change"
         story = """<p>In a busy workspace, you and your team collaborate smoothly using Google Drive Cloud. 
         Everything is usually efficient and trouble-free. However, one day, something peculiar occurs. 
@@ -249,16 +264,16 @@ def fetch_task_content(task_id):
 
 
     elif task_id == 'task2':
-        actionSimulationList = ['Create',  'Permission Change', 'Move']
+        actionSimulationList = ['Create',  'Permission Change', 'Move', 'Move']
         addConstraint = "Move"
     elif task_id == 'task3':
-        actionSimulationList = ['Create', 'Permission Change', 'Edit']
+        actionSimulationList = ['Create', 'Permission Change', 'Edit', 'Edit']
         addConstraint = "Edit"
     elif task_id == 'task4':
-        actionSimulationList = ['Create', 'Permission Change', 'Delete']
+        actionSimulationList = ['Create', 'Permission Change', 'Delete', 'Delete']
         addConstraint = "Delete"
     else:
-        actionSimulationList = ['Create', 'Create', 'Permission Change']
+        actionSimulationList = ['Create', 'Create', 'Permission Change', 'Permission Change']
         addConstraint = "Create"
 
 
@@ -277,13 +292,35 @@ def fetch_task_content(task_id):
 
     Simulator = PerformActions(actionsCount, actionSimulationList, delayList, addConstraint, mysql)
     Simulator.perform_actions(file_dict)
-   
-    
-    
-    
+
+    # Fetch and Update the logs database
+    time.sleep(8)
+
     # Return the task content as an HTML string
     return story
         
+    
+####### Route for fetching Resolutions from Database ###########
+
+@app.route('/fetch_resolutions', methods=['POST'])
+def fetch_resolutions():
+
+    action = request.form.get('action').split(':')[0].split('-')[0]
+    actor = request.form.get('actor')
+    document_id = request.form.get('document_id')
+    current_user = request.form.get('current_user')
+
+    # Extract Resolutions from databse with the filter parameters and also extract all the action constraints
+    db = DatabaseQuery(mysql.connection, mysql.connection.cursor())
+    resolutions = db.get_conflict_resolutions(action)
+    del db
+
+    if resolutions:
+        return jsonify(resolutions=resolutions)
+    else:
+        return jsonify(resolutions=[])
+
+
 
 
 

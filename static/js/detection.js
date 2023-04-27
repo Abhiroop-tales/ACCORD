@@ -17,6 +17,7 @@ function detectConflicts() {
       const action = $("#dropdown-1").val();
       const actor = $("#dropdown-2").val();
       const document = $("#dropdown-3").val();
+      
   
       // AJAX request to call the Python function
       $.ajax({
@@ -25,7 +26,8 @@ function detectConflicts() {
         data: {
           action: action,
           actor: actor,
-          document: document
+          document: document, 
+          current_date: '2022-08-30T15:30:00.000Z', // Include the current-date value in the request
         },
 
         success: function(response) {
@@ -60,7 +62,7 @@ function detectConflicts() {
 
                 // Create and append View button for the fifth column
                 const viewButton = $("<button>")
-                .addClass("btn btn-primary btn-sm view-button")
+                .addClass("view-button")
                 .text("View Conflict")
                 .attr("data-row-number", index) // Store the row number as a data attribute
                 .on("click", function() {
@@ -71,7 +73,7 @@ function detectConflicts() {
 
                 // Create and append Resolve button for the sixth column
                 const resolveButton = $("<button>")
-                .addClass("btn btn-success btn-sm resolve-button")
+                .addClass("resolve-button")
                 .text("Resolve Conflict")
                 .attr("data-row-number", index) // Store the row number as a data attribute
                 .on("click", function() {

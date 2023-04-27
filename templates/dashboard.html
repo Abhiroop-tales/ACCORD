@@ -174,10 +174,13 @@
         <!---------  USER STUDY TAB DETAILS START -->
          <div id="tab-3" class="tab-content">
             <center><h2>User study tasks</h2></center>
+            
             <div id="loader" class="loader" style="display:none;">
                 <img src="{{ url_for('static', filename='img/loader2.gif') }}" alt="Loading...">
             </div>
+            <p id="current-date" style="display:none;" value="2023-01-15T00:00:00.000Z"></p>
             <ul class="list-group list-group-flush">
+                
                 <li class="list-group-item task active" id="task1" onclick="openModal('task1-modal', 'task1')">Task 1: Permission Change Conflicts</li>
                 <li class="list-group-item task disabled" id="task2" onclick="openModal('task2-modal', 'task2')">Task 2: Move Conflicts</li>
                 <li class="list-group-item task disabled" id="task3" onclick="openModal('task3-modal', 'task3')">Task 3: Edit Conflicts</li>
@@ -185,6 +188,14 @@
                 <li class="list-group-item task disabled" id="task5" onclick="openModal('task5-modal', 'task5')">Task 5: Create Conflicts</li>
               </ul>
           <p class="thank-you-message" style="display: none;">Thank you for providing your responses!</p>
+          <div class="instructions">
+            <h3>Instructions for the User</h3>
+            <ol>
+                <li>S1</li>
+                <li>S2</li>
+                <li>S3</li>
+            </ol>
+        </div>
       </div>          
             
        
@@ -199,8 +210,42 @@
                         
                     </div>
                     <div class="modal-body">
-                        <!-- Task 1 content and questions go here -->
+                        <div class="modal-narration">
+
+
+                        </div>
+
+                        <!---- User Response  -->
+                        <p id="us-detection-label" style="display: none;"></p><br>
+                        <div class="User-responses">
+
+                            <center><button id="show-conflicts-btn" class="show-conflicts-btn" type="button" class="btn btn-primary" onclick="showdetectedConflicts('task1-modal', 'show-conflicts-btn')">Show Conflicts</button></center>
+                            
+                            <div id="us-detect_loader" class="loader" style="display:none;">
+                                <img src="{{ url_for('static', filename='img/loader.gif') }}" alt="Loading...">
+                            </div>
+                            <div id="us-logs-table-container" style="display: none;">
+                            <table id="us-logs-table" class="conflicts-table">
+                                <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Activity Time</th>
+                                    <th>Action</th>
+                                    <th>Document</th>
+                                    <th>Actor</th>
+                                    <th>Conflict</th>
+                                    <th>Resolution</th>
+                                </tr>
+                                </thead>
+                                <tbody>
+                                </tbody>
+                            </table>
+                            </div>
+
+                        </div>
+                        
                     </div>
+
                     <div class="modal-footer">
                         <button type="button" class="btn btn-primary complete-task" data-bs-dismiss="modal" onclick="closeModal('task1-modal')">Complete Task 1</button>
                     </div>

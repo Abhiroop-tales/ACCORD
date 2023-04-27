@@ -18,7 +18,7 @@ class UserSubject():
         totalList = list(user_dict.keys())
         totalList.remove(user_name)
         self.usersList = totalList
-        self.userEmail = self.userName+'@abhiroop.shop'
+        self.userEmail = self.userName
 
 
 # Class to perform actions as a user
@@ -66,7 +66,7 @@ class PerformActions():
             file = self.userSubject.service.files().get(fileId=fileID, fields='owners').execute()
             owner_email = file['owners'][0]['emailAddress']
         
-            constraints = [document_name, fileID, self.constraintaction, actionType, self.userSubject.userEmail, "FALSE", "eq",owner_email, '-']
+            constraints = [document_name, fileID, self.constraintaction, actionType+' Permission', self.userSubject.userEmail, "FALSE", "eq",owner_email, '-']
             self.db.add_action_constraint(constraints)
            
             

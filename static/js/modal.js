@@ -1,4 +1,35 @@
+function displayResolutionInfoBox(rowNumber, response) {
+  // Extract the Resolution Action and set of resolutions
+  const resolutionAction = response.resolutions[0];
+  const resolutions = response.resolutions[1].split(',');
+
+  // Create an array of resolution paragraphs
+  const resolutionParagraphs = resolutions.map(function (resolution) {
+    return `<p><strong>Resolution: </strong>${resolution}</p>`;
+  });
+
+  // Join the resolution paragraphs
+  const resolutionsHtml = resolutionParagraphs.join('');
+
+  const resolutionInfoBox = $("<div>")
+    .addClass("resolution-info-box")
+    .attr("style", "text-align: left") // Add the style attribute for left alignment
+    .html(`<p><strong>Resolution Action:</strong> ${resolutionAction}</p>${resolutionsHtml}`);
+
+  const resolutionInfoBoxRow = $("<tr>")
+    .addClass("resolution-info-box-row")
+    .append($("<td colspan='7'>").append(resolutionInfoBox));
+
+  $("#us-logs-table tbody tr").eq(rowNumber + 1).after(resolutionInfoBoxRow);
+}
+
 function resolveLog(rowNumber) {
+   
+  // Disable the clicked "Resolve" button
+  const clickedResolveButton = $(".resolve-button[data-row-number='" + rowNumber + "']");
+  clickedResolveButton.prop("disabled", true);
+  sessionStorage.setItem("resolveButtonDisabled" + rowNumber, true);
+  
   const conflictsData = sessionStorage.getItem("conflictsData");
   if (!conflictsData) {
     console.error("No conflicts data found in sessionStorage");
@@ -26,17 +57,15 @@ function resolveLog(rowNumber) {
     },
 
     success: function (response) {
-      const resolutionInfoBox = $("<div>")
-        .addClass("resolution-info-box")
-        .attr("style", "text-align: left") // Add the style attribute for left alignment
-        .html(`<p><strong>Resolution:</strong> ${response.resolution}</p>`);
-
-      const resolutionInfoBoxRow = $("<tr>")
-        .addClass("resolution-info-box-row")
-        .append($("<td colspan='7'>").append(resolutionInfoBox));
-
-      $("#us-logs-table tbody tr").eq(rowNumber + 1).after(resolutionInfoBoxRow);
+      // Store the fetched resolution data in sessionStorage
+      sessionStorage.setItem("resolutionsData" + rowNumber, JSON.stringify(response));
+    
+      // Display the resolution info box
+      displayResolutionInfoBox(rowNumber, response);
+      // Show the feedback form
+      $(".feedback-form").show();
     },
+    
 
     error: function (jqXHR, textStatus, errorThrown) {
       console.error("Error fetching resolutions:", textStatus, errorThrown);
@@ -107,6 +136,7 @@ function displayLogs(logs, briefLogs) {
       .addClass("resolve-button")
       .text("Resolve Conflict")
       .attr("data-row-number", index) // Store the row number as a data attribute
+      .prop("disabled", sessionStorage.getItem("resolveButtonDisabled" + index) === "true") // Check if the button is disabled in sessionStorage
       .on("click", function () {
         // Add logic for Resolve button click event
         resolveLog($(this).data("row-number"));
@@ -138,6 +168,19 @@ function displayStoredLogs() {
     // Display info box for each disabled button
     $(".view-button:disabled").each(function () {
       viewLog($(this).data("row-number"), data.briefLogs);
+    });
+
+    // Disable Resolve buttons and display resolution boxes for disabled buttons
+    $(".resolve-button:disabled").each(function () {
+      const rowNumber = $(this).data("row-number");
+      const resolutionsData = sessionStorage.getItem("resolutionsData" + rowNumber);
+
+      if (resolutionsData) {
+        const response = JSON.parse(resolutionsData);
+
+        // Display the resolution info box with the stored data
+        displayResolutionInfoBox(rowNumber, response);
+      }
     });
   }
 }

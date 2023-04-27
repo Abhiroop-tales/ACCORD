@@ -199,7 +199,8 @@ def detect_conflicts():
             for log in logs:
                 activityTime = log[0]
                 docName = log[3]
-                if docName in session['user_documents'] and activityTime>= currentDateTime:
+                #if docName in session['user_documents'] and activityTime>= currentDateTime:
+                if activityTime>= currentDateTime:
                     userLogs.append(log)
             
             logs = userLogs

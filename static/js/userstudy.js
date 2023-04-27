@@ -212,3 +212,25 @@ $(".task").click(function() {
       });
   });
 });
+function toggleEffectivenessQuestion() {
+  const effectivenessQuestion = document.getElementById('effectiveness-question');
+  const alternativeSolution = document.getElementById('alternative-solution');
+  
+  if (document.getElementById('acceptability').value != "") {
+    effectivenessQuestion.classList.remove('hidden');
+  } else {
+    effectivenessQuestion.classList.add('hidden');
+  }
+  
+  alternativeSolution.classList.add('hidden');
+}
+
+function toggleAlternativeSolution() {
+  const alternativeSolution = document.getElementById('alternative-solution');
+
+  if (document.querySelector('input[name="effectiveness"]:checked').value === 'no') {
+    alternativeSolution.classList.remove('hidden');
+  } else {
+    alternativeSolution.classList.add('hidden');
+  }
+}

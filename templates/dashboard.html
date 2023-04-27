@@ -179,6 +179,18 @@
                 <img src="{{ url_for('static', filename='img/loader2.gif') }}" alt="Loading...">
             </div>
             <p id="current-date" style="display:none;" value="2023-01-15T00:00:00.000Z"></p>
+            <div class="instructions">
+                <h3>Instructions for the User participating in the study:</h3>
+                <ol>
+                    <li>Complete all five tasks and provide responses for each one.</li>
+                    <li>Wait at least 30 seconds for the task to initialize and simulate the actions and conflicts.</li>
+                    <li>Read through what happened in each task and view the conflicts that occurred.</li>
+                    <li>View the proposed resolutions and execute them to resolve the conflict.</li>
+                    <li>Provide feedback on the acceptability and effectiveness of the resolution after resolving the conflict.</li>
+                    <li>Repeat the process for all five tasks and provide authentic responses.</li>
+                  </ol>
+            </div>
+           
             <ul class="list-group list-group-flush">
                 
                 <li class="list-group-item task active" id="task1" onclick="openModal('task1-modal', 'task1')">Task 1: Permission Change Conflicts</li>
@@ -188,14 +200,7 @@
                 <li class="list-group-item task disabled" id="task5" onclick="openModal('task5-modal', 'task5')">Task 5: Create Conflicts</li>
               </ul>
           <p class="thank-you-message" style="display: none;">Thank you for providing your responses!</p>
-          <div class="instructions">
-            <h3>Instructions for the User</h3>
-            <ol>
-                <li>S1</li>
-                <li>S2</li>
-                <li>S3</li>
-            </ol>
-        </div>
+          
       </div>          
             
        
@@ -243,6 +248,31 @@
                             </div>
 
                         </div>
+                        <div class="feedback-form" style="display:none;">
+                            <h2>Feedback Form</h2>
+                            <div class="form-group">
+                              <label for="acceptability">Rate the acceptability of the resolution (1-5):</label>
+                              <select id="acceptability" onchange="toggleEffectivenessQuestion()">
+                                <option value="">Select a rating</option>
+                                <option value="1">1</option>
+                                <option value="2">2</option>
+                                <option value="3">3</option>
+                                <option value="4">4</option>
+                                <option value="5">5</option>
+                              </select>
+                            </div>
+                            <div id="effectiveness-question" class="form-group hidden">
+                              <label>Was the provided resolution effective?</label>
+                              <input type="radio" id="yes" name="effectiveness" value="yes" onclick="toggleAlternativeSolution()">
+                              <label for="yes">Yes</label>
+                              <input type="radio" id="no" name="effectiveness" value="no" onclick="toggleAlternativeSolution()">
+                              <label for="no">No</label>
+                            </div>
+                            <div id="alternative-solution" class="form-group hidden">
+                              <label for="alternative">What is the alternative resolution that you want to suggest?</label>
+                              <input type="text" id="alternative" name="alternative">
+                            </div>
+                          </div>
                         
                     </div>
 

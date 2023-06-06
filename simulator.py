@@ -23,13 +23,18 @@ class UserSubject():
 
 # Class to perform actions as a user
 class PerformActions():
-    def __init__(self, actionCount, actions, actionDelay, constraintAction,mysql):
+    def __init__(self, owner, actionCount, actions, actionDelay, constraintAction, constraintType, mysql, fileID, actionIndex):
         self.actionCount = actionCount
         self.actionDelay = actionDelay
         self.actions = actions
         self.userSubject = None
         self.constraintaction = constraintAction
+        self.constraintType = constraintType
         self.db = DatabaseQuery(mysql.connection, mysql.connection.cursor())
+        self.fileID = fileID
+        self.ownerName = owner
+        self.newuser = owner
+        self.actionIndex = actionIndex
     
     def create_user_subject(self, user_name, user_dict):
         self.userSubject = UserSubject(user_name, user_dict)
@@ -49,24 +54,23 @@ class PerformActions():
             return False
 
     # Simulate Permission Change actions
-    def simulate_permissionChange(self, fileID):
-        actionTypes = ['Add', 'Remove', 'Update']
-        actionType = random.choice(actionTypes)
+    def simulate_permissionChange(self, fileID, actionType, PCconstraint):
+        
         fileUserList, userIdList = getUserList(self.userSubject.service, fileID)
         roles = ['writer', 'commenter', 'reader']
-        
+                
         
         # Add Constraint to the action being performed
-        if(self.constraintaction == "Permission Change"):
+        if(self.constraintaction == "Permission Change" and PCconstraint):
             
 
             file = self.userSubject.service.files().get(fileId=fileID, fields='name').execute()
             document_name = file['name']
 
             file = self.userSubject.service.files().get(fileId=fileID, fields='owners').execute()
-            owner_email = file['owners'][0]['emailAddress']
+            #owner_email = file['owners'][0]['emailAddress']
         
-            constraints = [document_name, fileID, self.constraintaction, actionType+' Permission', self.userSubject.userEmail, "FALSE", "eq",owner_email, '-']
+            constraints = [document_name, fileID, self.constraintaction, self.constraintType, self.userSubject.userEmail, "FALSE", "eq",self.ownerName, '-']
             self.db.add_action_constraint(constraints)
            
             
@@ -75,20 +79,23 @@ class PerformActions():
 
         match actionType:
             # Add User to the file
-            case "Add":
+            case "Add Permission":
                 new_userList = list(set(self.userSubject.usersList).difference(fileUserList))
-
+                newUser = random.choice(new_userList)
+                self.newuser = newUser
+                
                 if new_userList:
                     permission = {
                         'type': 'user',
                         'role': random.choice(roles),
-                        'emailAddress': random.choice(new_userList)
+                        'emailAddress': newUser
                     }
                     self.userSubject.service.permissions().create(fileId=fileID, body=permission, sendNotificationEmail=False).execute()
                     return True
 
-            case "Remove":
+            case "Remove Permission":
                 # Remove the actor ID from the user ID list and choose a random user to remove permission
+               
                 userIdList.pop(fileUserList.index(self.userSubject.userName))
                 if userIdList:
                     # Fetch the permissions for the file
@@ -109,8 +116,9 @@ class PerformActions():
                         return True
 
 
-            case "Update":
+            case "Update Permission":
                 # Remove the actor ID from the user ID list and choose a random user to update permission
+                
                 userIdList.pop(fileUserList.index(self.userSubject.userName))
                 if userIdList:
                     # Fetch the permissions for the file
@@ -208,7 +216,7 @@ class PerformActions():
 
     
     # Simulate Create Action
-    def simulate_create(self):
+    def simulate_create(self, inFolder):
         # Define the file metadata
         total_FolderList = getFolderList(self.userSubject.service)
         fruitNames = ["apple", "banana", "cherry", "date", "elderberry", "fig", "grape", "honeydew", "kiwi", "lemon", "orange", "peach", "pear", "pineapple", "strawberry", "watermelon", "london", "paris", "newyork", "tokyo", "berlin", "mumbai", "report", "document", "presentation", "spreadsheet", "invoice", "receipt"]
@@ -216,53 +224,82 @@ class PerformActions():
             'name': random.choice(fruitNames) + '_' + datetime.now().strftime("%Y-%m-%d_%H-%M-%S") + '.docx',
             'mimeType': 'application/vnd.google-apps.document'
             }
-        if(random.randint(0,2) % 2 != 0):
+        if(inFolder):
             file_metadata['parents'] = [random.choice(total_FolderList)]
         
-        self.userSubject.service.files().create(body=file_metadata, media_body=None).execute()
+        fileID = self.userSubject.service.files().create(body=file_metadata, media_body=None).execute()
+        self.fileID = fileID.get('id')
         return True
 
     # Method to perform actions based on the Selected options
     def perform_actions(self, actorsDict):
         try:
             actorList = list(actorsDict.keys())
+
+            # Always make sure first permission change is additon of people
+            actor = self.ownerName
+
             # Perform actions until the action Count parameters is zero
             while(self.actionCount > 0):
                 simval = False
                 # Choose an actor and an action
-                actor = random.choice(actorList)
+                
+                self.create_user_subject(actor, actorsDict)
+
                 action = self.actions[len(self.actions)-self.actionCount]
                 delay = self.actionDelay[len(self.actionDelay)-self.actionCount]
                 
-                self.create_user_subject(actor, actorsDict)
+                
                 fileList = getFileList(self.userSubject.service)
                 folderList = getFolderList(self.userSubject.service)
 
                 file_object = random.choice(fileList)
-                
+                print("################################")
+                print(action)
+             
                 # Simulate Actions based on action selected
                 match action:
                     case "Create":
-                        simval = self.simulate_create()
+                        simval = self.simulate_create(False)
 
                     case "Delete":
-                        simval =self.simulate_delete(file_object)
+                        #file_object = self.fileobject
+                        simval =self.simulate_delete(self.fileID)
                     
                     case "Edit":
-                        file = self.userSubject.service.files().get(fileId=file_object).execute()
+                        #file_object = self.fileobject
+                        file = self.userSubject.service.files().get(fileId=self.fileID).execute()
                         mime_type = file['mimeType']
                         while(mime_type != 'application/vnd.google-apps.document'):
                             file_object = random.choice(fileList)
-                            file = self.userSubject.service.files().get(fileId=file_object).execute()
+                            file = self.userSubject.service.files().get(fileId=self.fileID).execute()
                             mime_type = file['mimeType']
                         
                         simval = self.simulate_edit(file_object)
 
                     case "Move":
-                        simval = self.simulate_move(file_object, folderList)
+                        #file_object = self.fileobject
+                        simval = self.simulate_move(self.fileID, folderList)
                     
                     case "Permission Change":
-                        simval = self.simulate_permissionChange(file_object)
+                        #file_object = self.fileobject
+                        if(self.actionIndex ==  1):
+                            actionType = "Add Permission"      
+                            PCconstraint = False
+                            
+                        elif(self.actionIndex == 2 and self.constraintaction == "Permission Change"):
+                            actionType = self.constraintType
+                            PCconstraint = True
+                            
+                        else:
+                            actionTypes = ['Add Permission', 'Remove Permission', 'Update Permission']
+                            actionType = random.choice(actionTypes)
+                            PCconstraint = False
+                        
+                        simval = self.simulate_permissionChange(self.fileID, actionType, PCconstraint)
+                        if(simval):
+                            actor = self.newuser
+                        
                     
                     case _:
                         pass
@@ -271,11 +308,12 @@ class PerformActions():
                 if(simval):
                     #print(action)
                     self.actionCount -= 1
-                    time.sleep(int(delay))
+                    time.sleep(10)
 
                 del self.userSubject
 
-            
+            return self.fileID
+
         except LookupError as le:
             return("Error in the key or index !!\n" + str(le))
         except ValueError as ve:

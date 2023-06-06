@@ -1,6 +1,7 @@
 from flask import Flask, render_template, request, redirect, url_for, session, flash, jsonify
 from flask_mysqldb import MySQL
 import yaml, hashlib, os, time, random
+from datetime import datetime
 from math import floor
 from functools import wraps
 from serviceAPI import create_user_driveAPI_service, create_directoryAPI_service, create_reportsAPI_service
@@ -8,8 +9,8 @@ from detection import get_filteroptions
 from conflictDetctionAlgorithm import detectmain
 from sqlconnector import DatabaseQuery
 from activitylogs import Logupdater
-from simulator import PerformActions
-
+from demosimulator import UserSubject, PerformActions
+from logextraction import extractDriveLog
 
 
 # Dictionary to store the user services
@@ -132,7 +133,7 @@ def logout():
     flash('You have been logged out.', 'success')
     return redirect(url_for('login'))
 
-############# Route to handle Regresh Logs event ################
+############# Route to handle Refresh Logs event ################
 @app.route('/refresh_logs', methods=['POST'])
 def refresh_logs():
     # Fetch and Update the logs database
@@ -240,67 +241,112 @@ def detect_conflicts():
         
 
 ## Route to Simulate actions for user study
-@app.route('/fetch_task_content/<task_id>')
-def fetch_task_content(task_id):
+@app.route('/fetch_task_content', methods=['POST'])
+def fetch_task_content():
     
 
     # Fetch the content for the task based on the task_id
     # Initilize Actions, Actions to be simulated and Delays 
-    actionsList = ["Create", "Delete", "Edit", "Move", "Permission Change"]
-    actionsCount = 4
-    delayCount = 3
+    #actionsList = ["Create", "Delete", "Edit", "Move", "Permission Change"]
     
+    # Extract JSON data from POST request
+    data = request.get_json()
 
-    if task_id == 'task1':
-        actionSimulationList = ['Create'] + ['Permission Change']*3
-        addConstraint = "Permission Change"
-        story = """<p>In a busy workspace, you and your team collaborate smoothly using Google Drive Cloud. 
-        Everything is usually efficient and trouble-free. However, one day, something peculiar occurs. 
-        The file access permissions become jumbled, leading to confusion about who can view or modify specific documents.</p>
-        <p>Some teammates lose access to vital files, while others can see things they shouldn't.
-        Just when the chaos begins to escalate, a helpful application comes to your rescue. Your task is to use this app to investigate the issue, comprehend its origin, and implement the suggested solutions to rectify the problems.</p>
-        <p>As you undertake your mission, the application efficiently restores order, ensuring each team member has the appropriate access to the files they need. 
-        With normalcy restored, it's time to reflect on the experience.</p> 
-        <p>Share your thoughts about the app's proposed solutions and their effectiveness, helping to improve the application and maintain smooth collaboration for everyone in the future.</p>"""
-
-
-    elif task_id == 'task2':
-        actionSimulationList = ['Create',  'Permission Change', 'Move', 'Move']
-        addConstraint = "Move"
-    elif task_id == 'task3':
-        actionSimulationList = ['Create', 'Permission Change', 'Edit', 'Edit']
-        addConstraint = "Edit"
-    elif task_id == 'task4':
-        actionSimulationList = ['Create', 'Permission Change', 'Delete', 'Delete']
-        addConstraint = "Delete"
-    else:
-        actionSimulationList = ['Create', 'Create', 'Permission Change', 'Permission Change']
-        addConstraint = "Create"
-
-
-
-    delayList = [random.randint(1, delayCount) for i in range(actionsCount)]
+    action = data['action']
+    addConstraint = data['addConstraint']
+    constraintType = data['constraintType']
+    fileID = data['fileID']
+    actionIndex = int(data['actionIndex'])
+    print(actionIndex)
+    if(fileID == 'None'):
+        fileID = None
+    
+    
 
     #### CallSimulator Object #########
     # Extract User tokes 
     directory = "tokens/"
+    #file_dict = {'abt@abhiroop.shop':'token_abt.json','abhi09@abhiroop.shop':'token_abhi09.json','actor@abhiroop.shop':'token_actor.json','actor2@abhiroop.shop':'token_actor2.json'}
     file_dict = {}
-
     for filename in os.listdir(directory):
         if filename.endswith(".json"):
             key = filename.split("_")[1].split(".")[0]+'@abhiroop.shop'
             file_dict[key] = filename
 
-    Simulator = PerformActions(actionsCount, actionSimulationList, delayList, addConstraint, mysql)
-    Simulator.perform_actions(file_dict)
+    ### Perform first few actions as owner and remainer other actions as other ditors
+    owner = UserSubject(session['user_id'], file_dict)
+    if(actionIndex < 2):
+        actor = owner
+    else:
+        # get all the editors of the file
+        file = owner.service.files().get(fileId=fileID, fields="permissions").execute()
+        email_list = []  # Create an empty list to store the emails
+        for permission in file['permissions']:
+            if permission.get('role') in ['writer', 'owner']:
+                email_list.append(permission.get('emailAddress'))  # Add email to the list if user has 'writer' or 'owner' permission
+        
+        # Remove the owner's email from the list if it exists
+        if owner.userEmail in email_list:
+            email_list.remove(owner.userEmail)
+     
+        # Select a random email from the list
+        actorEmail = random.choice(email_list) if email_list else owner.userEmail
+        actor = UserSubject(actorEmail, file_dict)
 
-    # Fetch and Update the logs database
-    time.sleep(8)
+    # Add Constraint and Perform the constraint action 
+    if(actionIndex == 3):
+        db = DatabaseQuery(mysql.connection, mysql.connection.cursor())
+        file = owner.service.files().get(fileId=fileID, fields='name').execute()
+        document_name = file['name']
+        
+        if(action == "Edit" and constraintType == "Time Limit Edit"):
+            current_datetime = datetime.now().strftime("%Y-%m-%dT%H:%M:%S.%fZ")
+            constraints = [document_name, fileID, action, constraintType, actor.userEmail, "TRUE", "lt",owner.userEmail, current_datetime]
+        else:
+            constraints = [document_name, fileID, action, constraintType, actor.userEmail, "FALSE", "eq", owner.userEmail, '-']
+        db.add_action_constraint(constraints)
+        time.sleep(3)
 
-    # Return the task content as an HTML string
-    return story
         
     
+    Simulator = PerformActions(owner, actor, action, constraintType, fileID, actionIndex)
+    fileID = Simulator.perform_actions(file_dict)
+
+    # Sleep to Fetch and Update the logs database
+    time.sleep(5)
+
+    # Return the file ID content as an HTML string
+    return fileID
+        
+############## Route to fetch Drive Log ##########################
+@app.route('/fetch_drive_log', methods=['GET'])
+def fetch_drive_log():
+    time = request.args.get('time') # retrieve time from the GET parameters
+    # Create DB connection
+    db = DatabaseQuery(mysql.connection, mysql.connection.cursor())
+
+    totalLogs = []
+    
+    if(time != None):
+        # Extract the activity logs from the Google cloud from lastlog Date
+        activity_logs = extractDriveLog(time, user_services[session['username']]['reports'])
+        activity_logs.pop(0)
+
+        # Update the log Database table when the new activities are recorded
+        if(len(activity_logs) > 1):
+            new_log_date = activity_logs[0].split('\t*\t')[0]
+            db.add_activity_logs(activity_logs)
+            db.update_log_date(new_log_date)
+            for logitem in reversed(activity_logs[1:]):
+                logV = logitem.split('\t*\t')
+                totalLogs.append({'time':logV[0], 'activity':logV[1], 'actor': logV[5], 'resource':logV[3]})
+         
+
+    del db
+    return totalLogs
+
+
+
 ####### Route for fetching Resolutions from Database ###########
 
 @app.route('/fetch_resolutions', methods=['POST'])

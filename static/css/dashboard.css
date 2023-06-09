@@ -158,6 +158,66 @@ form#register-form button:hover {
     background-color: #45a049;
   }
   
+/* Button Wrapper Styles */
+.button-wrapper {
+    text-align: center;
+    margin-top: 20px;
+}
+
+/* Button Styles */
+#detect-conflicts-button {
+    background-color: #4CAF50; /* Green */
+    border: none;
+    color: white;
+    padding: 15px 32px;
+    text-align: center;
+    text-decoration: none;
+    display: inline-block;
+    font-size: 16px;
+    margin: 4px 2px;
+    cursor: pointer;
+    border-radius: 4px;
+    transition-duration: 0.4s;
+}
+
+/* Button Hover State */
+#detect-conflicts-button:hover {
+    background-color: #45a049; /* Darker green */
+}
+
+/* Disabled Button Styles */
+#detect-conflicts-button:disabled {
+    background-color: #a0a0a0; /* Gray */
+    cursor: not-allowed;
+}
+
+
+/* Button Styles */
+#resolve-conflicts-button {
+    background-color: #4CAF50; /* Green */
+    border: none;
+    color: white;
+    padding: 15px 32px;
+    text-align: center;
+    text-decoration: none;
+    display: inline-block;
+    font-size: 16px;
+    margin: 4px 2px;
+    cursor: pointer;
+    border-radius: 4px;
+    transition-duration: 0.4s;
+}
+
+/* Button Hover State */
+#resolve-conflicts-button:hover {
+    background-color: #45a049; /* Darker green */
+}
+
+/* Disabled Button Styles */
+#resolve-conflicts-button:disabled {
+    background-color: #a0a0a0; /* Gray */
+    cursor: not-allowed;
+}
 
 
 

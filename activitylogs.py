@@ -1,5 +1,6 @@
 from sqlconnector import DatabaseQuery
 from logextraction import extractDriveLog
+from datetime import datetime, timedelta
 
 # Method to update Activity Logs in the database
 
@@ -26,8 +27,19 @@ class Logupdater():
                 # Update the log Database table when the new activities are recorded
                 if(len(activity_logs) > 1):
                     new_log_date = activity_logs[0].split('\t*\t')[0]
+
+                    # Parse the string into a datetime object
+                    date_format = "%Y-%m-%dT%H:%M:%S.%fZ"
+                    log_datetime = datetime.strptime(new_log_date, date_format)
+
+                    # Subtract 4 hours
+                    updated_datetime = log_datetime - timedelta(hours=4)
+
+                    # Format it back to a string if needed
+                    updated_log_date = updated_datetime.strftime(date_format)
+
                     db.add_activity_logs(activity_logs)
-                    db.update_log_date(new_log_date)
+                    db.update_log_date(updated_log_date)
                     totalLogs = len(activity_logs)-1
                     
 

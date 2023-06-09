@@ -81,6 +81,30 @@ class DatabaseQuery:
             return "Error in Value Entered !!\n" + str(ve)
         except TypeError as te:
             return "Error in Type matching !!\n" + str(te)
+        
+
+    # Function to extract logs based on filter from database
+    def extract_logs_date(self,dateTime):
+        try:
+            query = "SELECT activity_time, action, doc_id, doc_name, actor_id, actor_name FROM activity_log WHERE activity_time > %s"
+            self.cursor.execute(query, (dateTime,))
+
+            myresult = self.cursor.fetchall()
+            logs = [["Activity Time","Action","Document ID","Document Name","Actor ID","Actor Name"]]
+            if (myresult != None):
+                for result in myresult:
+
+                    logs.append(list(result))
+
+                return logs
+            else:
+                return None
+        except LookupError as le:
+            return "Error in the key or index !!\n" + str(le)
+        except ValueError as ve:
+            return "Error in Value Entered !!\n" + str(ve)
+        except TypeError as te:
+            return "Error in Type matching !!\n" + str(te)
 
     # Function to extract logs based on filter from database
     def extract_logs(self,startDate,endDate):
@@ -199,17 +223,16 @@ class DatabaseQuery:
      # Function to extract action Constraints for an action on given target
     def extract_targetaction_constraints(self, doc_id, action, action_type, constraint_target):
         try:
-            query = "SELECT doc_id, action, action_type, constraint_target, action_value FROM action_constraints WHERE doc_id = %s AND action = %s AND action_type = %s AND constraint_target = %s"
-            self.cursor.execute(query,(doc_id, action, action_type, constraint_target))
-            myresult = self.cursor.fetchone()
+            query = "SELECT doc_id, action, action_type, constraint_target, constraint_owner FROM action_constraints WHERE doc_id = %s AND action = %s AND constraint_target = %s"
+            
+            self.cursor.execute(query,(doc_id, action, constraint_target))
+            myresult = self.cursor.fetchall()
+     
             if (myresult != None):
                 
-                if(myresult[4] == "FALSE"):
-                    return False
-                else:
-                    return True
+                return myresult[0]
             else:
-                return True
+                return []
         except LookupError as le:
             return "Error in the key or index !!\n" + str(le)
         except ValueError as ve:
@@ -221,7 +244,7 @@ class DatabaseQuery:
     def get_conflict_resolutions(self,action):
         try:
             constraintQuery = "conflict = '"+action+"'"
-            query = "SELECT conflict, resolutions FROM conflict_resolutions WHERE "+constraintQuery
+            query = "SELECT conflict, resolutions, proactive FROM conflict_resolutions WHERE "+constraintQuery
             self.cursor.execute(query)
             myresult = self.cursor.fetchone()
             if (myresult != None):
@@ -256,11 +279,18 @@ class DatabaseQuery:
     
     # Function to add conflict resolutions in database
     def add_conflict_resolution(self, conflictTime, conflictType):
-        try:           
-            resolution = "False"
-            self.cursor.execute("INSERT INTO conflicts (conflictTime,conflictType,resolution) VALUES (%s,%s,%s)", (conflictTime,conflictType,resolution))
+        try:
 
-            self.db.commit()
+            # Check if a record with the same conflictTime and conflictType already exists
+            check_query = "SELECT COUNT(*) FROM conflicts WHERE conflictTime = %s AND conflictType = %s"
+            self.cursor.execute(check_query, (conflictTime, conflictType))
+            count = self.cursor.fetchone()[0]  
+
+            if(count == 0):         
+                resolution = "False"
+                self.cursor.execute("INSERT INTO conflicts (conflictTime,conflictType,resolution) VALUES (%s,%s,%s)", (conflictTime,conflictType,resolution))
+
+                self.db.commit()
 
         except LookupError as le:
             return "Error in the key or index !!\n" + str(le)

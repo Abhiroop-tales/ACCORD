@@ -21,7 +21,7 @@ class UserSubject():
 
 # Class to perform actions individually
 class PerformActions():
-    def __init__(self, owner, actor, action, actionType, fileID, actionIndex):
+    def __init__(self, owner, actor, action, actionType, fileID, actionIndex, constraintAction):
         self.action = action
         self.userSubject = actor
         self.actionType = actionType
@@ -29,6 +29,7 @@ class PerformActions():
         self.ownerName = owner
         self.actionCount = 1
         self.actionIndex = actionIndex
+        self.constraintAction = constraintAction
 
     # Check permissions to Edit and share the file
     def check_permissions(self, fileID):
@@ -132,9 +133,6 @@ class PerformActions():
 
         # Check if file is of Document Type
         if(mime_type == 'application/vnd.google-apps.document'):
-            
-            
-            permissions = self.userSubject.service.permissions().list(fileId=fileID).execute()
          
             fileContent = "Hello World! File has been Edited on " + str(datetime.now())
             encoded_content = base64.b64encode(fileContent.encode())
@@ -148,6 +146,7 @@ class PerformActions():
     # Simulate Move Action
     def simulate_move(self, folderList):
         fileID = self.fileID
+              
         # Retrieve the current parent(s) of the file
         file = self.userSubject.service.files().get(fileId=fileID, fields='parents').execute()
         if file:
@@ -160,8 +159,11 @@ class PerformActions():
                 newFolder = random.choice(new_FolderList)
                 self.userSubject.service.files().update(fileId=fileID, addParents=newFolder, removeParents=previous_parents, fields='id, parents').execute()
                 return True
+        
+        return True
+
             
-        return False
+        
     
     # Simulate Delete Action
     def simulate_delete(self):
@@ -206,33 +208,28 @@ class PerformActions():
                 fileList = getFileList(self.userSubject.service)
                 folderList = getFolderList(self.userSubject.service)
 
-                file_object = random.choice(fileList)
+                
                 print("################################")
                 print(action)
              
                 # Simulate Actions based on action selected
                 match action:
                     case "Create":
+                        
                         simval = self.simulate_create(False)
 
                     case "Delete":
                         #file_object = self.fileobject
-                        simval =self.simulate_delete(self.fileID)
+                        simval =self.simulate_delete()
+                        if(simval):
+                            self.fileID = 'None'
                     
                     case "Edit":
-                        #file_object = self.fileobject
-                        file = self.userSubject.service.files().get(fileId=self.fileID).execute()
-                        mime_type = file['mimeType']
-                        while(mime_type != 'application/vnd.google-apps.document'):
-                            file_object = random.choice(fileList)
-                            file = self.userSubject.service.files().get(fileId=self.fileID).execute()
-                            mime_type = file['mimeType']
-                        
-                        simval = self.simulate_edit(file_object)
+                        simval = self.simulate_edit()
 
                     case "Move":
                         #file_object = self.fileobject
-                        simval = self.simulate_move(self.fileID, folderList)
+                        simval = self.simulate_move(folderList)
                     
                     case "Permission Change":
                         #file_object = self.fileobject
@@ -254,11 +251,12 @@ class PerformActions():
                 
                 if(simval):
                     #print(action)
+                    
                     self.actionCount -= 1
-                    time.sleep(5)
+                    time.sleep(2)
 
                 
-
+            
             return self.fileID
 
         except LookupError as le:

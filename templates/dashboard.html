@@ -8,7 +8,7 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='css/actionconstraint.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/loader.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/demodashboard.css') }}">
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/modal.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/detectmodal.css') }}">
 
     
 
@@ -45,7 +45,7 @@
 
     <main>
         <!---- CONFLICT DETECTION ---------------------->
-        <div id="tab-1" class="tab-content">
+        <!-- <div id="tab-1" class="tab-content">
             <center><h2>Detect conflicts in the Cloud</h2></center>
             <div class="filter-options">
                 <div class="filter-group">
@@ -117,7 +117,7 @@
 
 
 
-        </div>
+        </div> -->
         
         <!---- CONFLICT DETECTION END---------------------->
 
@@ -173,7 +173,7 @@
         
         <!---------  DEMO TAB DETAILS START -->
          <div id="tab-3" class="tab-content">
-            
+            <p id="detect-date" style="display:none;"></p>
             
             <div id="loader" class="loader" style="display:none;">
                 <img src="{{ url_for('static', filename='img/loader2.gif') }}" alt="Loading...">
@@ -194,56 +194,56 @@
                         <tbody>
                             <tr class="row">
                                 <td>1</td>
-                                <td>Scenario 1</td>
+                                <td>Alice and Bob were working together on a private file. Bob added Carol to the file, and suddenly Alice's private information in the file was no longer secret</td>
                                 <td>Unauthroized permission addition</td>
                                 <td>Permission Change</td>
                             </tr>
 
                             <tr class="row">
                                 <td>2</td>
-                                <td>Scenario 2</td>
+                                <td>Alice, Bob, and Carol all had access to a shared file. Carol removed Alice from the file, so Alice couldn't get to it when she needed it.</td>
                                 <td>Unauthorized permission removal</td>
                                 <td>Permission Change</td>
                             </tr>
 
                             <tr class="row">
                                 <td>3</td>
-                                <td>Scenario 3</td>
+                                <td>Bob was able to edit a shared file, but Alice changed his permissions to just viewing. Now, Bob can't make any changes to the file.</td>
                                 <td>Unauthorized permission update</td>
                                 <td>Permission Change</td>
                             </tr>
 
                             <tr class="row">
                                 <td>4</td>
-                                <td>Scenario 4</td>
+                                <td>Alice and Bob were working on a file, but Bob changed some stuff that made the file wrong and unreliable.</td>
                                 <td>Unauthorized edit</td>
                                 <td>Edit</td>
                             </tr>
 
                             <tr class="row">
                                 <td>5</td>
-                                <td>Scenario 5</td>
-                                <td>Unauthorized edit out of timeframe</td>
+                                <td>Bob was supposed to make changes to a file by a certain date, but he made edits after that date, which wasn’t allowed</td>
+                                <td>Time Limit Edit</td>
                                 <td>Edit</td>
                             </tr>
 
                             <tr class="row">
                                 <td>6</td>
-                                <td>Scenario 6</td>
+                                <td>Bob and Alice were working on a file, but Bob moved it somewhere else and now Alice can’t get to it anymore.</td>
                                 <td>Unauthorized move</td>
                                 <td>Move</td>
                             </tr>
 
                             <tr class="row">
                                 <td>7</td>
-                                <td>Scenario 8</td>
+                                <td>Bob and Alice were both working on a shared file, but Bob deleted it, so now Alice can't work on it anymore.</td>
                                 <td>Unauthorized deletion</td>
                                 <td>Delete</td>
                             </tr>
 
                             <tr class="row">
                                 <td>8</td>
-                                <td>Scenario 9</td>
+                                <td>Bob and Alice were working in a shared folder, but Bob made too many unnecessary files, leaving no space for Alice to save her important stuff</td>
                                 <td>Unauthorized creation</td>
                                 <td>Create</td>
                             </tr>
@@ -254,7 +254,19 @@
 
                 <!-- New div element to show the simulation actions -->
                 <div id="conflict-actions-display">
-                    <p id="status-message"></p>
+                    
+                     <!-- New Division for Selected Conflict Info -->
+                    <div id="selected-conflict-info" style="display: none;">
+                        <p><strong>Conflict:</strong> <span id="conflict-text"></span></p>
+                        <p><strong>Type:</strong> <span id="conflict-type"></span></p>
+                        <p><strong>Scenario:</strong> <span id="conflict-scenario"></span></p>
+                    </div>
+
+                    <div id="status-message-wrapper" style="display: flex; align-items: center;">
+                        <p id="status-message" style="margin-right: 10px;"></p>
+                        <img id="loading-image" src="{{ url_for('static', filename='img/loader2.gif') }}" alt="Loading..." style="display: none; width: 50px; height: 50px;">
+                    </div>
+                    
                     <table class="data-table" id="log-table" style="display: none;">
                         <thead>
                             <tr class="header-row">
@@ -269,6 +281,44 @@
                         </tbody>
                     </table>
                 </div>
+
+                <!-- New Button Element -->
+                <div class="button-wrapper">
+                    <button id="detect-conflicts-button" disabled>Detect Conflicts</button>
+                    
+                </div>
+                <div id="detect_loader" class="loader" style="display:none;">
+                    <img src="{{ url_for('static', filename='img/loader.gif') }}" alt="Loading...">
+                </div>
+
+
+
+                <!------  Conflict Detection Table -->
+
+                <div id="myModal" class="modal">
+                    <div class="modal-content">
+                        <span class="close">&times;</span>
+                        <p id="detection-label" style="display: none;"></p>
+                        <div id="logs-table-container">
+                            <table id="logs-table" class="conflicts-table">
+                                <thead>
+                                    <tr>
+                                        <th>ID</th>
+                                        <th>Activity Time</th>
+                                        <th>Action</th>
+                                        <th>Document</th>
+                                        <th>Actor</th>
+                                        <th>Conflict</th>
+                                        <th>Resolution</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
             </div>
             
             
@@ -328,6 +378,6 @@
     <script src="{{ url_for('static', filename='js/detection.js') }}"></script>
     <script src="{{ url_for('static', filename='js/actionconstraint.js') }}"></script>
     <script src="{{ url_for('static', filename='js/demodashboard.js') }}"></script>
-    <script src="{{ url_for('static', filename='js/modal.js') }}"></script>
+    <!-- <script src="{{ url_for('static', filename='js/modal.js') }}"></script> -->
 </body>
 </html>

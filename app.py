@@ -143,36 +143,111 @@ def refresh_logs():
     
     return jsonify(len=str(total_logs))
 
-########### Route to handle OnClick Detect Function ##############
-@app.route('/detect_conflicts', methods=['POST'])
-def detect_conflicts():
-    # Fetch and Update the logs database
-    activity_logs = Logupdater(mysql, user_services[session['username']]['reports'])
-    total_logs = activity_logs.updateLogs_database() 
-    del activity_logs
+# ########### Route to handle OnClick Detect Function ##############
+# @app.route('/detect_conflicts', methods=['POST'])
+# def detect_conflicts():
+#     # Fetch and Update the logs database
+#     activity_logs = Logupdater(mysql, user_services[session['username']]['reports'])
+#     total_logs = activity_logs.updateLogs_database() 
+#     del activity_logs
 
-    action = request.form.get('action')
-    actor = request.form.get('actor')
-    document = request.form.get('document')
-    currentDateTime = request.form.get('current_date')
+#     action = request.form.get('action')
+#     actor = request.form.get('actor')
+#     document = request.form.get('document')
+#     currentDateTime = request.form.get('current_date')
     
 
-    if(action == "Any"):
-        action = "LIKE '%'"
-    else:
-        action = "LIKE '"+action+"%'"
-    if(actor == "Any"):
-        actor = "LIKE '%'"
-    else:
-        actor = "= '"+actor+"'"
-    if(document == "Any"):
-        document = "LIKE '%'"
-    else:
-        document = "= '"+document+"'" 
+#     if(action == "Any"):
+#         action = "LIKE '%'"
+#     else:
+#         action = "LIKE '"+action+"%'"
+#     if(actor == "Any"):
+#         actor = "LIKE '%'"
+#     else:
+#         actor = "= '"+actor+"'"
+#     if(document == "Any"):
+#         document = "LIKE '%'"
+#     else:
+#         document = "= '"+document+"'" 
+
+#     # Extract Logs from databse with the filter parameters and also extract all the action constraints
+#     db = DatabaseQuery(mysql.connection, mysql.connection.cursor())
+#     logs = db.extract_logs_detect(action,actor,document)
+#     actionConstraintsList = db.extract_action_constraints("LIKE '%'")
+#     del db
+
+#     # Create a Dictionary of action constraitns with key as documentID
+#     actionConstraints = {}
+#     for constraint in actionConstraintsList:
+#         if(constraint[1] not in actionConstraints):
+#             actionConstraints[constraint[1]] = [constraint]
+#         else:
+#             actionConstraints[constraint[1]].append(constraint)
+    
+#     if(logs != None and len(logs)>1):
+        
+#         # Initializing and setting user view parameters
+#         headers = logs.pop(0)
+#         conflictLogs = []
+#         logs = logs[::-1]
+
+        
+
+#         # Only use user Logs that are part of user documents
+#         if(session['user_role'] != "admin" and document == "LIKE '%'"):
+            
+#             userLogs = []
+#             for log in logs:
+#                 activityTime = log[0]
+#                 docName = log[3]
+#                 #if docName in session['user_documents'] and activityTime>= currentDateTime:
+#                 if activityTime>= currentDateTime:
+#                     userLogs.append(log)
+            
+#             logs = userLogs
+
+#         print(currentDateTime)
+#         # Calculate time taken by the detection Engine to detect conflicts
+#         T0 = time.time()
+#         result = detectmain(logs,actionConstraints)
+#         T1 = time.time()
+
+#         # Update the display table only with Conflicts and print the detection Time
+#         totalLogs = len(result)
+#         conflictsCount = 0
+#         briefLogs = []
+#         for i in range(totalLogs):
+#             # Extract only the logs that have conflict
+#             if(result[i]):
+#                 event = logs[i]
+#                 conflictLogs.append([event[0],event[1].split(':')[0].split('-')[0],event[3],event[5]])
+#                 briefLogs.append(event)
+#                 conflictsCount += 1
+
+#         if(T1 == T0):
+#             speed = "Inf"
+#         else:
+#             speed = floor(conflictsCount/(T1-T0))
+        
+#         detectTimeLabel = "Time taken to detect "+str(conflictsCount)+" conflicts from "+str(totalLogs)+" activity logs: "+str(round(T1-T0,3))+" seconds. Speed = "+str(speed)+" conflicts/sec"
+
+        
+ 
+#         return jsonify(logs=conflictLogs, detectTimeLabel=detectTimeLabel, briefLogs=briefLogs)
+    
+#     else:
+#         detectTimeLabel = "No Activites Found for the selected filters"
+#         return jsonify(logs=[], detectTimeLabel=detectTimeLabel, briefLogs=[])
+
+########### Route to handle OnClick Detect Function for Demonstration ##############
+@app.route('/detect_conflicts_demo', methods=['POST'])
+def detect_conflicts_demo():
+    
+    currentDateTime = request.form.get('current_date')
 
     # Extract Logs from databse with the filter parameters and also extract all the action constraints
     db = DatabaseQuery(mysql.connection, mysql.connection.cursor())
-    logs = db.extract_logs_detect(action,actor,document)
+    logs = db.extract_logs_date(currentDateTime)
     actionConstraintsList = db.extract_action_constraints("LIKE '%'")
     del db
 
@@ -191,22 +266,6 @@ def detect_conflicts():
         conflictLogs = []
         logs = logs[::-1]
 
-        
-
-        # Only use user Logs that are part of user documents
-        if(session['user_role'] != "admin" and document == "LIKE '%'"):
-            
-            userLogs = []
-            for log in logs:
-                activityTime = log[0]
-                docName = log[3]
-                #if docName in session['user_documents'] and activityTime>= currentDateTime:
-                if activityTime>= currentDateTime:
-                    userLogs.append(log)
-            
-            logs = userLogs
-
-        print(currentDateTime)
         # Calculate time taken by the detection Engine to detect conflicts
         T0 = time.time()
         result = detectmain(logs,actionConstraints)
@@ -216,13 +275,20 @@ def detect_conflicts():
         totalLogs = len(result)
         conflictsCount = 0
         briefLogs = []
+        db = DatabaseQuery(mysql.connection, mysql.connection.cursor())
         for i in range(totalLogs):
             # Extract only the logs that have conflict
+            
             if(result[i]):
                 event = logs[i]
                 conflictLogs.append([event[0],event[1].split(':')[0].split('-')[0],event[3],event[5]])
                 briefLogs.append(event)
                 conflictsCount += 1
+
+                # Add conflicts to the conflicts table to track resolved conflicts
+                db.add_conflict_resolution(event[0], event[1])
+
+        del db
 
         if(T1 == T0):
             speed = "Inf"
@@ -232,7 +298,7 @@ def detect_conflicts():
         detectTimeLabel = "Time taken to detect "+str(conflictsCount)+" conflicts from "+str(totalLogs)+" activity logs: "+str(round(T1-T0,3))+" seconds. Speed = "+str(speed)+" conflicts/sec"
 
         
- 
+
         return jsonify(logs=conflictLogs, detectTimeLabel=detectTimeLabel, briefLogs=briefLogs)
     
     else:
@@ -278,20 +344,24 @@ def fetch_task_content():
     if(actionIndex < 2):
         actor = owner
     else:
-        # get all the editors of the file
-        file = owner.service.files().get(fileId=fileID, fields="permissions").execute()
-        email_list = []  # Create an empty list to store the emails
-        for permission in file['permissions']:
-            if permission.get('role') in ['writer', 'owner']:
-                email_list.append(permission.get('emailAddress'))  # Add email to the list if user has 'writer' or 'owner' permission
+  
+        if(fileID != 'None'):
+            # get all the editors of the file
+            file = owner.service.files().get(fileId=fileID, fields="permissions").execute()
+            email_list = []  # Create an empty list to store the emails
+            for permission in file['permissions']:
+                if permission.get('role') in ['writer', 'owner']:
+                    email_list.append(permission.get('emailAddress'))  # Add email to the list if user has 'writer' or 'owner' permission
+            
+            # Remove the owner's email from the list if it exists
+            if owner.userEmail in email_list:
+                email_list.remove(owner.userEmail)
         
-        # Remove the owner's email from the list if it exists
-        if owner.userEmail in email_list:
-            email_list.remove(owner.userEmail)
-     
-        # Select a random email from the list
-        actorEmail = random.choice(email_list) if email_list else owner.userEmail
-        actor = UserSubject(actorEmail, file_dict)
+            # Select a random email from the list
+            actorEmail = random.choice(email_list) if email_list else owner.userEmail
+            actor = UserSubject(actorEmail, file_dict)
+        else:
+            actor = owner
 
     # Add Constraint and Perform the constraint action 
     if(actionIndex == 3):
@@ -309,43 +379,80 @@ def fetch_task_content():
 
         
     
-    Simulator = PerformActions(owner, actor, action, constraintType, fileID, actionIndex)
+    Simulator = PerformActions(owner, actor, action, constraintType, fileID, actionIndex, addConstraint)
     fileID = Simulator.perform_actions(file_dict)
 
-    # Sleep to Fetch and Update the logs database
-    time.sleep(5)
+
 
     # Return the file ID content as an HTML string
     return fileID
-        
+
+
+##### Function ptocess fetched logs
+def process_logs(logV):
+    action = logV[1][:3]  # Get the first three characters for comparison
+    
+    if action == "Cre":
+        return f'{logV[5]} has Created a resource'
+    elif action == "Del":
+        return f'{logV[5]} has Deleted a resource'
+    elif action == "Edi":
+        return f'{logV[5]} has Edited a resource'
+    elif action == "Mov":
+        return f'{logV[5]} has Moved a resource'
+    else:
+        sub_parts = logV[1].split(':')
+        first_sub_part = sub_parts[1].split('-')[0] if len(sub_parts) > 1 else ""
+        second_sub_part = sub_parts[2].split('-')[0] if len(sub_parts) > 2 else ""
+        user = sub_parts[3] if len(sub_parts) > 3 else ""
+
+        if second_sub_part == "none":
+            return f'{logV[5]} has added a user {user} to the resource'
+        elif first_sub_part == "none":
+            return f'{logV[5]} has removed a user {user} from the resource'
+        else:
+            return f'{logV[5]} has updated user {user} permissions for the resource'  
+             
 ############## Route to fetch Drive Log ##########################
 @app.route('/fetch_drive_log', methods=['GET'])
 def fetch_drive_log():
-    time = request.args.get('time') # retrieve time from the GET parameters
+    startTime = request.args.get('time') # retrieve time from the GET parameters
     # Create DB connection
     db = DatabaseQuery(mysql.connection, mysql.connection.cursor())
 
     totalLogs = []
-    
-    if(time != None):
+
+    if(startTime != None):
         # Extract the activity logs from the Google cloud from lastlog Date
-        activity_logs = extractDriveLog(time, user_services[session['username']]['reports'])
+        activity_logs = extractDriveLog(startTime, user_services[session['username']]['reports'])
         activity_logs.pop(0)
 
         # Update the log Database table when the new activities are recorded
         if(len(activity_logs) > 1):
-            new_log_date = activity_logs[0].split('\t*\t')[0]
-            db.add_activity_logs(activity_logs)
-            db.update_log_date(new_log_date)
-            for logitem in reversed(activity_logs[1:]):
+            for logitem in reversed(activity_logs):
                 logV = logitem.split('\t*\t')
-                totalLogs.append({'time':logV[0], 'activity':logV[1], 'actor': logV[5], 'resource':logV[3]})
-         
+                totalLogs.append({'time':logV[0], 'activity':process_logs(logV), 'actor': logV[5], 'resource':logV[3]})
+
+        
 
     del db
-    return totalLogs
+    return jsonify(totalLogs)
 
+####### Route for fetching Action Constraints ###############
+@app.route('/get_action_constraints', methods=['POST'])
+def get_action_constraints():
+    doc_id = request.form.get('doc_id')
+    action = request.form.get('action')
+    action = action.split(':')[0].split('-')[0]
+    action_type = request.form.get('action_type')
+    constraint_target = request.form.get('constraint_target')
 
+    db = DatabaseQuery(mysql.connection, mysql.connection.cursor())
+    constraints = db.extract_targetaction_constraints(doc_id, action, action_type, constraint_target)
+    if(len(constraints) > 0):
+        return jsonify(constraints)
+    else:
+        return jsonify([])
 
 ####### Route for fetching Resolutions from Database ###########
 
@@ -356,16 +463,19 @@ def fetch_resolutions():
     actor = request.form.get('actor')
     document_id = request.form.get('document_id')
     current_user = request.form.get('current_user')
+    conflictTime = request.form.get('activity_time')
 
     # Extract Resolutions from databse with the filter parameters and also extract all the action constraints
     db = DatabaseQuery(mysql.connection, mysql.connection.cursor())
     resolutions = db.get_conflict_resolutions(action)
+
+    val = db.extract_conflict_resolution(conflictTime, request.form.get('action'))
     del db
 
     if resolutions:
-        return jsonify(resolutions=resolutions)
+        return jsonify(resolutions=resolutions, resolved = val)
     else:
-        return jsonify(resolutions=[])
+        return jsonify(resolutions=[], resolved = "False")
 
 
 

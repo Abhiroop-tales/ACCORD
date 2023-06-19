@@ -29,6 +29,7 @@
             </div>
         </div>
     </header>
+    
     <nav>
         <ul>
             <!-- <li><a href="#tab-1">Conflict Detection</a></li>
@@ -41,7 +42,7 @@
             {% endif %}
         </ul>
     </nav>
-
+    
 
     <main>
         <!---- CONFLICT DETECTION ---------------------->
@@ -180,8 +181,8 @@
             </div>
             <p id="current-date" style="display:none;" value="2023-01-15T00:00:00.000Z"></p>
             <div class="demo-dashboard">
-                <center><h2 id="dashboard-header">ACCORD's Demonstration tasks - Conflict Scenarios</h2></center>
-                <div id="demo-table">
+                <center><h2 id="dashboard-header">Select a conflict scenario below to simulate the action</h2></center>
+                <!-- <div id="demo-table">
                     <table class="data-table">
                         <thead>
                             <tr class="header-row">
@@ -250,16 +251,60 @@
                             
                         </tbody>
                     </table>
+                </div> -->
+                <div  id="demo-tasks" class="dashboard">
+                    <div class="card" title="Alice and Bob were working together on a private file. Bob added Carol to the file, and suddenly Alice's private information in the file was no longer secret.">
+                        <div class="icon"><i class="fas fa-user-lock"></i></div>
+                        <div class="conflict-type">Unauthorized Permission Addition</div>
+                        <div class="conflict-action">(Permission Change)</div>
+                    </div>
+                    <div class="card" title="Alice, Bob, and Carol all had access to a shared file. Carol removed Alice from the file, so Alice couldn't get to it when she needed it.">
+                        <div class="icon"><i class="fas fa-user-slash"></i></div>
+                        <div class="conflict-type">Unauthorized Permission Removal</div>
+                        <div class="conflict-action">(Permission Change)</div>
+                    </div>
+                    <div class="card" title="Bob was able to edit a shared file, but Alice changed his permissions to just viewing. Now, Bob can't make any changes to the file.">
+                        <div class="icon"><i class="fas fa-user-edit"></i></div>
+                        <div class="conflict-type">Unauthorized Permission Update</div>
+                        <div class="conflict-action">(Permission Change)</div>
+                    </div>
+                    <div class="card" title="Alice and Bob were working on a file, but Bob changed some stuff that made the file wrong and unreliable.">
+                        <div class="icon"><i class="fas fa-edit"></i></div>
+                        <div class="conflict-type">Unauthorized Edit</div>
+                        <div class="conflict-action">(Edit)</div>
+                    </div>
+                    <div class="card" title="Bob was supposed to make changes to a file by a certain date, but he made edits after that date, which wasn’t allowed.">
+                        <div class="icon"><i class="fas fa-clock"></i></div>
+                        <div class="conflict-type">Time Limit Edit</div>
+                        <div class="conflict-action">(Edit)</div>
+                    </div>
+                    <div class="card" title="Bob and Alice were working on a file, but Bob moved it somewhere else and now Alice can’t get to it anymore.">
+                        <div class="icon"><i class="fas fa-arrows-alt"></i></div>
+                        <div class="conflict-type">Unauthorized Move</div>
+                        <div class="conflict-action">(Move)</div>
+                    </div>
+                    <div class="card" title="Bob and Alice were both working on a shared file, but Bob deleted it, so now Alice can't work on it anymore.">
+                        <div class="icon"><i class="fas fa-trash-alt"></i></div>
+                        <div class="conflict-type">Unauthorized Deletion</div>
+                        <div class="conflict-action">(Delete)</div>
+                    </div>
+                    <div class="card" title="Bob and Alice were working in a shared folder, but Bob made too many unnecessary files, leaving no space for Alice to save her important stuff.">
+                        <div class="icon"><i class="fas fa-folder-plus"></i></div>
+                        <div class="conflict-type">Unauthorized Creation</div>
+                        <div class="conflict-action">(Create)</div>
+                    </div>
                 </div>
+
 
                 <!-- New div element to show the simulation actions -->
                 <div id="conflict-actions-display">
                     
                      <!-- New Division for Selected Conflict Info -->
                     <div id="selected-conflict-info" style="display: none;">
-                        <p><strong>Conflict:</strong> <span id="conflict-text"></span></p>
-                        <p><strong>Type:</strong> <span id="conflict-type"></span></p>
-                        <p><strong>Scenario:</strong> <span id="conflict-scenario"></span></p>
+                        <p><strong>Conflict:</strong> <span id="conflict-text" style="font-size: 18px;"></span></p>
+                        <p><strong>Type:</strong> <span id="conflict-type" style="font-size: 18px;"></span></p>
+                        <!-- <p><strong>Scenario:</strong> <span id="conflict-scenario"></span></p> -->
+                        <p><strong>Constraint:</strong> <span id="conflict-constraint" style="font-size: 18px;"></span></p>
                     </div>
 
                     <div id="status-message-wrapper" style="display: flex; align-items: center;">
@@ -271,10 +316,11 @@
                         <thead>
                             <tr class="header-row">
                                 <th>S.No</th>
+                                <th>Time</th>
                                 <th>Activity</th>
                                 <th>Resource</th>
                                 <th>Actor</th>
-                                <th>Time</th>
+                                
                             </tr>
                         </thead>
                         <tbody>
@@ -296,6 +342,9 @@
                 <!------  Conflict Detection Table -->
 
                 <div id="myModal" class="modal">
+                    <div id="execute_loader" class="loader" style="display:none;">
+                        <img src="{{ url_for('static', filename='img/loader.gif') }}" alt="Loading...">
+                    </div>
                     <div class="modal-content">
                         <span class="close">&times;</span>
                         <p id="detection-label" style="display: none;"></p>
@@ -306,7 +355,7 @@
                                         <th>ID</th>
                                         <th>Activity Time</th>
                                         <th>Action</th>
-                                        <th>Document</th>
+                                        <th>Resource</th>
                                         <th>Actor</th>
                                         <th>Conflict</th>
                                         <th>Resolution</th>
@@ -350,25 +399,88 @@
         <!---- REGISTER or ADD USER---------------------->
         <div id="admin-tab-3" class="tab-content">
             <center><h2>Register New User</h2></center>
-            <form id="register-form">
+            <form id="register-form" onsubmit="return submitForm()">
+                <div id="server-response"></div> <!-- Add a div to display server response -->
+                <br>
                 <label for="username">Username:</label>
                 <input type="text" id="username" name="username" required>
-
+        
                 <label for="password">Password:</label>
                 <input type="password" id="password" name="password" required>
-
+        
                 <label for="email">Email:</label>
                 <input type="email" id="email" name="email" required>
-
+        
                 <label for="role">Role:</label>
                 <select id="role" name="role" required>
                     <option value="user">User</option>
                     <option value="admin">Admin</option>
                 </select>
-
+        
                 <button type="submit">Register</button>
             </form>
         </div>
+        
+        <script>
+            function validateForm() {
+                const emailInput = document.getElementById('email').value;
+                const usernameInput = document.getElementById('username').value;
+                
+                // Validate email format
+                const emailPattern = /^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4}$/;
+                if (!emailPattern.test(emailInput)) {
+                    alert("Please enter a valid email address");
+                    return false;
+                }
+                
+                // Sanitize the username input
+                const sanitizedUsername = usernameInput.replace(/[\W_]+/g,"");
+                if (sanitizedUsername !== usernameInput) {
+                    alert("Username contains invalid characters");
+                    return false;
+                }
+                
+                return true;
+            }
+        
+            function submitForm() {
+                if (validateForm()) {
+                    const xhr = new XMLHttpRequest();
+                    xhr.open("POST", "/register_user", true);
+                    xhr.setRequestHeader("Content-Type", "application/json");
+
+                    const formData = {
+                        username: document.getElementById('username').value,
+                        password: document.getElementById('password').value,
+                        email: document.getElementById('email').value,
+                        role: document.getElementById('role').value
+                    };
+
+                    xhr.send(JSON.stringify(formData));
+
+                    xhr.onreadystatechange = function() {
+                        if (xhr.readyState === 4 && xhr.status === 200) {
+                            // Clear form fields
+                            document.getElementById('username').value = '';
+                            document.getElementById('password').value = '';
+                            document.getElementById('email').value = '';
+                            document.getElementById('role').value = 'user';
+
+                            // Display server response at the beginning of the form
+                            const serverResponse = JSON.parse(xhr.responseText);
+                            const responseDiv = document.getElementById('server-response');
+                            responseDiv.innerHTML = serverResponse.message;
+                            responseDiv.style.color = 'green';
+                        }
+                    };
+
+                    return false; // Prevent the form from submitting in the traditional way
+                }
+
+                return false; // Prevent form submission if validation fails
+            }
+        </script>
+        
 
         <!---- REGISTER USER END---------------------->
 

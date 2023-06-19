@@ -35,17 +35,19 @@
 }
 
 .header-row th:nth-child(2), .row td:nth-child(2) {
-    width: 50%;
+    width: 10%;
 }
 
 .header-row th:nth-child(3), .row td:nth-child(3) {
-    width: 20%;
+    width: 50%;
 }
 
 .header-row th:nth-child(4), .row td:nth-child(4) {
     width: 25%;
 }
-
+.header-row th:nth-child(5), .row td:nth-child(4) {
+    width: 10%;
+}
 .row td {
     padding: 20px;
     text-align: center;
@@ -53,10 +55,12 @@
     background: #F0F8FF; /* Light blue for rows */
     color: #004C97; /* Dark blue font color for rows */
     border-bottom: 1px solid #B1D4E0; /* Border to differentiate rows */
+
 }
 
 .row {
     transition: all 0.2s ease-in-out; /* Adjusting transition property for smooth hover effects */
+    padding: 20px;
 }
 
 .row:hover {
@@ -64,4 +68,105 @@
     color: #ffffff; /* White font color on hover */
     transform: scale(1.02); /* Adding scale effect on hover */
     box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.15); /* Adding shadow on hover */
+}
+
+/* Dashboard in the form of a flex board */
+.dashboard {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 20px;
+    padding: 30px;
+}
+
+/* .card {
+    border-radius: 8px;
+    padding: 20px;
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.1);
+    text-align: center;
+    width: 250px;
+    transition: all 0.3s ease-in-out;
+    background: linear-gradient(to bottom right, #1e88e5, #64b5f6);
+    color: #ffffff; 
+    border: 1px solid rgba(0, 0, 0, 0.1);
+    cursor: pointer; 
+    margin: 5px;
+} */
+
+.card {
+    border-radius: 8px;
+    padding: 20px;
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.1);
+    text-align: center;
+    width: 250px;
+    transition: all 0.3s ease-in-out;
+    border: 1px solid rgba(0, 0, 0, 0.1);
+    cursor: pointer; /* Change cursor to indicate the card is clickable */
+    margin: 5px;
+}
+
+/* Permission Change group - blue shades */
+.card:nth-child(1) {
+    background: linear-gradient(to bottom right, #3a7bd5, #00d2ff); /* Lighter Blue gradient */
+    color: #ffffff;
+}
+
+.card:nth-child(2) {
+    background: linear-gradient(to bottom right, #1e3c72, #2a5298); /* Darker Blue gradient */
+    color: #ffffff;
+}
+
+.card:nth-child(3) {
+    background: linear-gradient(to bottom right, #2c3e50, #3498db); /* Medium Blue gradient */
+    color: #ffffff;
+}
+
+/* Edit group - green shades */
+.card:nth-child(4) {
+    background: linear-gradient(to bottom right, #16a085, #2ecc71); /* Lighter Green gradient */
+    color: #ffffff;
+}
+
+.card:nth-child(5) {
+    background: linear-gradient(to bottom right, #1e824c, #27ae60); /* Darker Green gradient */
+    color: #ffffff;
+}
+
+/* Unique actions - distinct gradients */
+.card:nth-child(6) {
+    background: linear-gradient(to bottom right, #c0392b, #e74c3c); /* Red gradient for Move */
+    color: #ffffff;
+}
+
+.card:nth-child(7) {
+    background: linear-gradient(to bottom right, #d35400, #f39c12); /* Orange gradient for Delete */
+    color: #ffffff;
+}
+
+.card:nth-child(8) {
+    background: linear-gradient(to bottom right, #8e44ad, #9b59b6); /* Purple gradient for Create */
+    color: #ffffff;
+}
+
+
+.card:hover {
+    box-shadow: 0 12px 24px rgba(0, 0, 0, 0.2);
+    transform: scale(1.05); /* Slightly scale up the card on hover */
+}
+
+.icon {
+    font-size: 40px;
+    margin-bottom: 10px;
+    color: rgba(255, 255, 255, 0.9);
+}
+
+.conflict-type {
+    font-weight: bold;
+    margin-bottom: 5px;
+    font-size: 16px;
+}
+
+.conflict-action {
+    font-size: 14px;
+    color: rgba(255, 255, 255, 0.8);
 }

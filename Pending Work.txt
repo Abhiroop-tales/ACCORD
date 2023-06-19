@@ -1,0 +1,5 @@
+Simulation For Delete and Move and Create action
+Conflict Detection for Can Edit conflict Type
+Implementing and executing resolutions for actions such as Edit, Move, Delete and Create.
+
+Implementing Addition of Action Contraint module

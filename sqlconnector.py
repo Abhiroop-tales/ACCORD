@@ -303,6 +303,9 @@ class DatabaseQuery:
     # Function to update conflict resolutions
     def update_conflict_resolution(self, conflictTime, conflictType, resolution):
         try:
+            print("I'm in update")
+            print(conflictTime)
+            print(conflictType)
             self.cursor.execute("UPDATE conflicts SET resolution = %s WHERE conflictTime = %s AND conflictType = %s", (resolution, conflictTime, conflictType))
             self.db.commit()
         except LookupError as le:

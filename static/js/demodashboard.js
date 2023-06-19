@@ -41,32 +41,41 @@ let taskData = {
     }
 }
 
-let rows = document.querySelectorAll(".demo-dashboard .row");
-let demoTable = document.querySelector("#demo-table");
+let cards = document.querySelectorAll(".dashboard .card");
+let demoTasks = document.querySelector("#demo-tasks");
 let dashboardHeader = document.querySelector("#dashboard-header");
 let statusMessage = document.querySelector("#status-message");
 let logTable = document.querySelector("#log-table");
 var detectDate = document.getElementById("detect-date");
 
-rows.forEach((row, index) => {
-    row.addEventListener("click", async () => {
-        demoTable.style.display = "none";
+cards.forEach((card, index) => {
+     card.addEventListener("click", async () => {
+        demoTasks.style.display = "none";
         logTable.style.display = "block";
 
         dashboardHeader.textContent = "Detailed view of Conflict Scenario " + (index + 1);
 
-         // Capture column values
-         let scenario = row.children[1].textContent; // second column
-         let conflictType = row.children[2].textContent; // third column
-         let conflict = row.children[3].textContent; // fourth column
+        // Capture column values
+        let scenario = card.getAttribute('title');
+        let conflictType = card.querySelector('.conflict-type').textContent;
+        let conflict = card.querySelector('.conflict-action').textContent;
+
          
          // Update the selected conflict info
          document.getElementById("conflict-text").textContent = conflict;
          document.getElementById("conflict-type").textContent = conflictType;
-         document.getElementById("conflict-scenario").textContent = scenario;
+        //  document.getElementById("conflict-scenario").textContent = scenario;
  
          // Enable the selected conflict info div
          document.getElementById("selected-conflict-info").style.display = "block";
+
+        // Code to Extend the action Simulation List for the task data
+        // let n = 4; // Replace '3' with the desired number of repetitions
+
+        // for (let key in taskData) {
+        //     let actionSimulationList = taskData[key].actionSimulationList;
+        //     taskData[key].actionSimulationList = actionSimulationList.flatMap(item => Array(n).fill(item));
+        // }
 
         let currentTaskData = taskData[index+1];
         statusMessage.textContent = "Simulation is running...";
@@ -103,7 +112,15 @@ rows.forEach((row, index) => {
                     },
                     body: JSON.stringify(requestData),
                 });
-                fileID = await response.text();
+                let data = await response.json();
+                fileID = data.fileID;
+                let constraint = data.constraint;
+
+                // Check if the constraint string is not empty
+                if (constraint !== "") {
+                    // Update the element's text content with the constraint
+                    document.getElementById("conflict-constraint").innerHTML = constraint;
+                }
                 
                 // Fetch drive log
                 let logResponse = await fetch('/fetch_drive_log?time=' + updatedTime);
@@ -117,11 +134,12 @@ rows.forEach((row, index) => {
                     let rowCount = logTable.querySelectorAll('tbody tr').length;
 
                     let newRow = document.createElement('tr');
-                    newRow.innerHTML = `<td>${rowCount + 1}</td>
-                                        <td>${logEntry.activity}</td>                                       
-                                        <td>${logEntry.resource}</td>
-                                        <td>${logEntry.actor}</td>
-                                        <td>${logEntry.time}</td>`;
+                    newRow.innerHTML = `<td style="font-size: 20px;">${rowCount + 1}</td>
+                                        <td style="font-size: 20px;">${logEntry.time}</td>
+                                        <td style="font-size: 20px;">${logEntry.activity}</td>
+                                        <td style="font-size: 20px;">${logEntry.resource}</td>
+                                        <td style="font-size: 20px;">${logEntry.actor}</td>`;
+
 
                     logTable.querySelector('tbody').append(newRow);
                 });
@@ -147,11 +165,11 @@ rows.forEach((row, index) => {
                 let rowCount = logTable.querySelectorAll('tbody tr').length;
 
                 let newRow = document.createElement('tr');
-                newRow.innerHTML = `<td>${rowCount + 1}</td>
-                                    <td>${logEntry.activity}</td>                                       
-                                    <td>${logEntry.resource}</td>
-                                    <td>${logEntry.actor}</td>
-                                    <td>${logEntry.time}</td>`;
+                newRow.innerHTML = `<td style="font-size: 20px;">${rowCount + 1}</td>
+                                    <td style="font-size: 20px;">${logEntry.time}</td>
+                                    <td style="font-size: 20px;">${logEntry.activity}</td>
+                                    <td style="font-size: 20px;">${logEntry.resource}</td>
+                                    <td style="font-size: 20px;">${logEntry.actor}</td>`;
 
                 logTable.querySelector('tbody').append(newRow);
             });
@@ -159,7 +177,7 @@ rows.forEach((row, index) => {
             counter++;
 
             // If code has been run 5 times, stop the interval
-            if (counter >= 10) {
+            if (counter >= 5) {
                 statusMessage.textContent = "Simulation Completed !!"
                 document.getElementById("loading-image").style.display = "none";
 
@@ -191,27 +209,107 @@ rows.forEach((row, index) => {
     });
 });
 
+async function fetchDriveLogAndUpdateTable() {
+    // The code you shared initially to fetch the drive log
+    let updatedTime = detectDate.textContent
+    
+    let logResponse = await fetch('/fetch_drive_log?time=' + updatedTime);
+    let logData = await logResponse.json();
+                
+    // Clear all rows
+    logTable.querySelector('tbody').innerHTML = '';
 
-function executeResolution() {
+    // Process and display the logData in logTable here
+    logData.forEach(logEntry => {
+        let rowCount = logTable.querySelectorAll('tbody tr').length;
+
+        let newRow = document.createElement('tr');
+        newRow.innerHTML = `<td style="font-size: 20px;">${rowCount + 1}</td>
+                            <td style="font-size: 20px;">${logEntry.time}</td>
+                            <td style="font-size: 20px;">${logEntry.activity}</td>
+                            <td style="font-size: 20px;">${logEntry.resource}</td>
+                            <td style="font-size: 20px;">${logEntry.actor}</td>`;
+
+        logTable.querySelector('tbody').append(newRow);
+    });
+}
+
+function executeResolution(rowNumber) {
+
+    // Show the loader
+    $("#execute_loader").show();
+
     // Extract constraints from session storage
-    const constraints = sessionStorage.getItem("constraints");
+    const conflictsData = sessionStorage.getItem("conflictsData");
 
-    // Send an HTTP request to the endpoint with data from session storage constraints
+    // Parse the data
+    const data = JSON.parse(conflictsData);
+    const log = data.briefLogs[rowNumber];
+
+    // Extract the relevant variables
+    const activityTime = log[0];
+    const documentId = log[2];
+    const action = log[1];
+    const actor = log[3];
+
+    // Send an HTTP request to the endpoint with the extracted variables as data
     $.ajax({
         url: '/execute_resolution',
         type: 'POST',
         data: {
-            constraints: constraints
+            activityTime: activityTime,
+            documentId: documentId,
+            action: action,
+            actor: actor
         },
         success: function (response) {
+            
             // Handle the success response here
-            console.log("Resolution executed successfully.");
+            if (response.status === 'success') {
+                alert("Resolution executed successfully.");
+                 // Disable the button and change its text
+                 const resolveButton = document.getElementById("resolve-conflicts-button");
+                 resolveButton.disabled = true;
+                 resolveButton.innerHTML = "Resolved";
+
+                // Call the fetch drive log function after the resolution is updated
+                
+
+                // Fetch drive log and update the table 5 times over a period of 1 second
+                let count = 0;
+                const interval = setInterval(() => {
+                    fetchDriveLogAndUpdateTable();
+                    count++;
+                    if (count >= 5) {
+                        clearInterval(interval);
+                        // Get the modal
+                        var modal = document.getElementById("myModal");
+                        modal.style.display = "none";
+                        // Hide the loader after 5 times execution is done
+                        $("#execute_loader").hide();
+                    }
+                }, 2000);
+                
+                
+
+
+            } else {
+                alert("Resolution execution failed.");
+                // Hide the loader
+                $("#execute_loader").hide();
+            }
+
+            
         },
         error: function (error) {
             // Handle error response here
             console.error("Error executing resolution:", error);
+            alert("An error occurred while executing resolution.");
         }
     });
+
+    
+    
 }
 
 function displayResolutionInfoBox(rowNumber, response) {
@@ -220,43 +318,96 @@ function displayResolutionInfoBox(rowNumber, response) {
     const resolutions = response.resolutions[1].split(',');
     const preventives = response.resolutions[2].split(',');
     const resolved = response.resolved;
-  
+    
     // Create an array of resolution paragraphs
     const resolutionParagraphs = resolutions.map(function (resolution) {
-      return `<p><strong>Resolution: </strong>${resolution}</p>`;
+      return resolution;
     });
-  
-    // Join the resolution paragraphsresolveLog
+    
+    // Join the resolution paragraphs
     const resolutionsHtml = resolutionParagraphs.join('');
 
     // Create an array of preventive paragraphs
-    const preventiveresolutionParagraphs = preventives.map(function (preventive) {
-        return `<p><strong>Preventive Resolution: </strong>${preventive}</p>`;
-      });
+    const preventiveResolutionParagraphs = preventives.map(function (preventive) {
+        return preventive;
+    });
     
-      // Join the resolution paragraphsresolveLog
-      const preventiveresolutionsHtml = preventiveresolutionParagraphs.join('');
+    // Join the preventive paragraphs
+    const preventiveResolutionsHtml = preventiveResolutionParagraphs.join('');
 
-    // Create the button
-    let buttonHtml = '';
+    // Create the resolution button
+    let resolutionButtonHtml = '';
     if (resolved === "True") {
-        buttonHtml = '<button id="resolve-conflicts-button" disabled>Resolved</button>';
+        resolutionButtonHtml = '<button id="resolve-conflicts-button" disabled>Resolved</button>';
     } else {
-        buttonHtml = `<button id ="resolve-conflicts-button" onclick="executeResolution()">Execute resolution</button>`;
+        resolutionButtonHtml = `<button id="resolve-conflicts-button" onclick="executeResolution(${rowNumber})">Undo Action</button>`;
     }
 
-  
+    // Create preventive mediations button
+    const preventiveMediationsButtonHtml = `<button id="preventive-mediations-button" style="background-color: #337ab7; border: none; color: white; padding: 12px 30px; text-align: center; text-decoration: none; display: inline-block; font-size: 14px; margin: 4px 2px; cursor: not-allowed; border-radius: 5px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);" disabled>Preventive Action</button>`;
+
+    // Create the content html
+    const contentHtml = `<p><strong>Resolve Conflict:</strong></p>
+                        <p>${resolutionButtonHtml} ${resolutionsHtml} </p>
+                        <p> ${preventiveMediationsButtonHtml} ${preventiveResolutionsHtml}</p>`;
+
     const resolutionInfoBox = $("<div>")
-      .addClass("resolution-info-box")
-      .attr("style", "text-align: left") // Add the style attribute for left alignment
-      .html(`<p><strong>Resolution Action:</strong> ${resolutionAction}</p>${resolutionsHtml}<br>${buttonHtml}<br>${preventiveresolutionsHtml}`);
-  
+        .addClass("resolution-info-box")
+        .attr("style", "text-align: left") // Add the style attribute for left alignment
+        .html(contentHtml);
+    
     const resolutionInfoBoxRow = $("<tr>")
-      .addClass("resolution-info-box-row")
-      .append($("<td colspan='7'>").append(resolutionInfoBox));
-  
+        .addClass("resolution-info-box-row")
+        .append($("<td colspan='7'>").append(resolutionInfoBox));
+    
     $("#logs-table tbody tr").eq(rowNumber + 1).after(resolutionInfoBoxRow);
 }
+
+
+
+// function displayResolutionInfoBox(rowNumber, response) {
+//     // Extract the Resolution Action and set of resolutions
+//     const resolutionAction = response.resolutions[0];
+//     const resolutions = response.resolutions[1].split(',');
+//     const preventives = response.resolutions[2].split(',');
+//     const resolved = response.resolved;
+  
+//     // Create an array of resolution paragraphs
+//     const resolutionParagraphs = resolutions.map(function (resolution) {
+//       return `<p><strong>Resolution: </strong>${resolution}</p>`;
+//     });
+  
+//     // Join the resolution paragraphsresolveLog
+//     const resolutionsHtml = resolutionParagraphs.join('');
+
+//     // Create an array of preventive paragraphs
+//     const preventiveresolutionParagraphs = preventives.map(function (preventive) {
+//         return `<p><strong>Preventive Mediations: </strong>${preventive}</p>`;
+//       });
+    
+//       // Join the resolution paragraphsresolveLog
+//       const preventiveresolutionsHtml = preventiveresolutionParagraphs.join('');
+
+//     // Create the button
+//     let resolutionbuttonHtml = '';
+//     if (resolved === "True") {
+//         resolutionbuttonHtml = '<button id="resolve-conflicts-button" disabled>Resolved</button>';
+//     } else {
+//         resolutionbuttonHtml = `<button id ="resolve-conflicts-button" onclick="executeResolution(${rowNumber})">Resolve conflict</button>`;
+//     }
+
+  
+//     const resolutionInfoBox = $("<div>")
+//       .addClass("resolution-info-box")
+//       .attr("style", "text-align: left") // Add the style attribute for left alignment
+//       .html(`<p><strong>Resolution Action:</strong> ${resolutionAction}</p>${resolutionsHtml}${resolutionbuttonHtml}<br>${preventiveresolutionsHtml}`);
+  
+//     const resolutionInfoBoxRow = $("<tr>")
+//       .addClass("resolution-info-box-row")
+//       .append($("<td colspan='7'>").append(resolutionInfoBox));
+  
+//     $("#logs-table tbody tr").eq(rowNumber + 1).after(resolutionInfoBoxRow);
+// }
 
 function resolveLog(rowNumber) {
      
@@ -345,18 +496,23 @@ function viewLog(rowNumber, briefLogs) {
             constraint_target: constraint_target
         },
         success: function (response) {
+            action_constraint = document.getElementById("conflict-constraint").innerHTML;
             // Create the information box
             const infoBox = $("<div>")
                 .addClass("info-box")
                 .attr("style", "text-align: left")
+                // .html(`
+                //     <p><strong>Activity Time:</strong> ${briefLog[0]}</p>
+                //     <p><strong>Action:</strong> ${briefLog[1]}</p>
+                //     <p><strong>Document ID:</strong> ${briefLog[2]}</p>
+                //     <p><strong>Document Name:</strong> ${briefLog[3]}</p>
+                //     <p><strong>Actor ID:</strong> ${briefLog[4]}</p>
+                //     <p><strong>Actor Name:</strong> ${briefLog[5]}</p>
+                //     <p><strong>Action Constraints set by: </strong> ${action_constraint}</p>
+
+                // `);
                 .html(`
-                    <p><strong>Activity Time:</strong> ${briefLog[0]}</p>
-                    <p><strong>Action:</strong> ${briefLog[1]}</p>
-                    <p><strong>Document ID:</strong> ${briefLog[2]}</p>
-                    <p><strong>Document Name:</strong> ${briefLog[3]}</p>
-                    <p><strong>Actor ID:</strong> ${briefLog[4]}</p>
-                    <p><strong>Actor Name:</strong> ${briefLog[5]}</p>
-                    <p><strong>Action Constraints set by: </strong> ${response[4]}</p>
+                    <p><strong>Action Constraints: </strong> ${action_constraint}</p>
 
                 `);
 
@@ -416,7 +572,7 @@ function callDetectConflictsDemo(currentDate) {
                 const row = $("<tr>");
                 
                 // Add index as the first column
-                row.append($("<td>").text(index + 1));
+                row.append($("<td>").text(data.conflictID[index]));
                 
                 // Append first four columns from log data
                 for (let i = 0; i < 4; i++) {
@@ -437,7 +593,7 @@ function callDetectConflictsDemo(currentDate) {
                 // Create and append Resolve button for the sixth column
                 const resolveButton = $("<button>")
                     .addClass("resolve-button")
-                    .text("Resolve Conflict")
+                    .text("View Resolution")
                     .attr("data-row-number", index) // Store the row number as a data attribute
                     .on("click", function() {
                         // Add logic for Resolve button click event

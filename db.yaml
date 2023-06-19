@@ -1,4 +1,0 @@
-mysql_host: 'localhost'
-mysql_user: 'root'
-mysql_password: 'root@1996'
-mysql_db: 'log_details'
